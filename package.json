@@ -1,9 +1,19 @@
 {
-	"name": "jmshelby.monopoly-web",
+	"name": "monopoly-web",
+	"version": "1.0.0",
+	"description": "Web interface for the Monopoly game engine",
+	"main": "index.js",
 	"scripts": {
+		"dev": "npx shadow-cljs watch app",
+		"build": "npx shadow-cljs release app",
+		"build:github": "npx shadow-cljs release github-pages",
+		"clean": "rm -rf resources/public/js/compiled/* docs/js/compiled/*",
+		"test": "clojure -M:test",
+		"lint": "clj-kondo --lint src || true",
+		"serve": "npx shadow-cljs server",
+		"deploy:github": "npm run clean && npm run build:github && npm run copy:github-assets",
+		"copy:github-assets": "mkdir -p docs && cp resources/public/index.html docs/index.html && (cp -r resources/public/vendor docs/ || true)",
 		"ancient": "clojure -Sdeps '{:deps {com.github.liquidz/antq {:mvn/version \"RELEASE\"}}}' -m antq.core",
-		"watch": "npx shadow-cljs watch app browser-test karma-test",
-		"release": "npx shadow-cljs release app",
 		"build-report": "npx shadow-cljs run shadow.cljs.build-report app target/build-report.html"
 	},
 	"dependencies": {
@@ -12,5 +22,11 @@
 	},
 	"devDependencies": {
 		"shadow-cljs": "2.26.2"
-	}
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/jmshelby/monopoly-web.git"
+	},
+	"author": "jmshelby",
+	"license": "MIT"
 }

@@ -1,0 +1,116 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install Clojure CLI
+      uses: DeLaGuardo/setup-clojure@12.1
+      with:
+        cli: 1.11.1.1413
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Cache shadow-cljs
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.m2/repository
+          ~/.gitlibs
+          .shadow-cljs
+        key: ${{ runner.os }}-clojure-${{ hashFiles('**/deps.edn', '**/shadow-cljs.edn') }}
+        restore-keys: |
+          ${{ runner.os }}-clojure-
+          
+    - name: Lint code
+      run: npm run lint
+      
+    - name: Run tests
+      run: npm run test
+      
+    - name: Build application
+      run: npm run build
+      
+    - name: Generate build report
+      run: npm run build-report
+      
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts
+        path: |
+          resources/public/js/compiled/
+          target/build-report.html
+
+  deploy-github-pages:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: 'temurin'
+        java-version: '17'
+        
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install Clojure CLI
+      uses: DeLaGuardo/setup-clojure@12.1
+      with:
+        cli: 1.11.1.1413
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Cache shadow-cljs
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.m2/repository
+          ~/.gitlibs
+          .shadow-cljs
+        key: ${{ runner.os }}-clojure-${{ hashFiles('**/deps.edn', '**/shadow-cljs.edn') }}
+        restore-keys: |
+          ${{ runner.os }}-clojure-
+          
+    - name: Build for GitHub Pages
+      run: npm run deploy:github
+      
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs
+        cname: monopoly-web.your-domain.com  # Optional: replace with your custom domain

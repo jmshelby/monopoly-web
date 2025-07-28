@@ -1,3 +1,4 @@
+# Clojure
 pom.xml
 pom.xml.asc
 *.jar
@@ -15,14 +16,20 @@ pom.xml.asc
 
 # Shadow-cljs build artifacts
 /resources/public/js/compiled/
+/docs/js/compiled/
 /.shadow-cljs/
 .shadow-cljs/
+/.cljs_node_repl/
 
 # Node modules and npm stuff
 /node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+package-lock.json
+
+# Build reports and artifacts
+/target/build-report.html
 
 # OS generated files
 .DS_Store
@@ -32,6 +39,11 @@ yarn-error.log*
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# IDE
+/.vscode/
+/.idea/
+*.iml
 
 # Editor files
 *~
@@ -43,3 +55,13 @@ Thumbs.db
 
 # REPL and development
 .nrepl-history
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Logs
+*.log

@@ -32,10 +32,31 @@
    :modules
    {:app {:init-fn jmshelby.monopoly-web.core/init}}
    :devtools
-   {:preloads [
-               re-frisk.preload]}
+   {:preloads [re-frisk.preload]}
    :dev
    {:compiler-options
     {:closure-defines
-     { 
-      re-com.config/root-url-for-compiler-output "http://localhost:8290/js/compiled/app/cljs-runtime/"}}}}}}
+     {re-com.config/root-url-for-compiler-output "http://localhost:8290/js/compiled/app/cljs-runtime/"}}}
+   :release
+   {:build-options
+    {:ns-aliases
+     {break-point re-com.config/root-url-for-compiler-output}}
+    :compiler-options
+    {:optimizations :advanced
+     :infer-externs :auto
+     :closure-defines
+     {goog.DEBUG false
+      re-com.config/root-url-for-compiler-output "/js/compiled/app/cljs-runtime/"}}}}
+
+ :github-pages
+  {:target     :browser
+   :output-dir "docs/js/compiled"
+   :asset-path "/monopoly-web/js/compiled"
+   :modules
+   {:app {:init-fn jmshelby.monopoly-web.core/init}}
+   :compiler-options
+   {:optimizations :advanced
+    :infer-externs :auto
+    :closure-defines
+    {goog.DEBUG false
+     re-com.config/root-url-for-compiler-output "/monopoly-web/js/compiled/app/cljs-runtime/"}}}}}
