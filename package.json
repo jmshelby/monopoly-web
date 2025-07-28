@@ -12,7 +12,7 @@
 		"lint": "clj-kondo --lint src || true",
 		"serve": "npx shadow-cljs server",
 		"deploy:github": "npm run clean && npm run build:github && npm run copy:github-assets",
-		"copy:github-assets": "mkdir -p docs && cp resources/public/index.html docs/index.html && (cp -r resources/public/vendor docs/ || true)",
+		"copy:github-assets": "mkdir -p docs && cp resources/public/index.html docs/index.html && (cp -r resources/public/vendor docs/ || true) && echo '.nojekyll' > docs/.nojekyll",
 		"ancient": "clojure -Sdeps '{:deps {com.github.liquidz/antq {:mvn/version \"RELEASE\"}}}' -m antq.core",
 		"build-report": "npx shadow-cljs run shadow.cljs.build-report app target/build-report.html"
 	},

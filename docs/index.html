@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset='utf-8'>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="description" content="Interactive web interface for Monopoly game simulation and analysis">
+    <meta name="keywords" content="monopoly, board game, simulation, statistics, analysis">
+    <meta name="author" content="jmshelby">
+    
+    <!-- Use HTTPS for external resources -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.5/css/bootstrap.min.css">
+    <link rel="stylesheet" href="./vendor/css/material-design-iconic-font.min.css">
+    <link rel="stylesheet" href="./vendor/css/re-com.css">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700,400italic" rel="stylesheet" type="text/css">
+    <link href="https://fonts.googleapis.com/css?family=Roboto+Condensed:400,300" rel="stylesheet" type="text/css">
+    
+    <title>Monopoly Web - Game Simulation & Analysis</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Monopoly Web - Game Simulation & Analysis">
+    <meta property="og:description" content="Interactive web interface for Monopoly game simulation and statistical analysis">
+    <meta property="og:url" content="https://jmshelby.github.io/monopoly-web/">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary">
+    <meta property="twitter:title" content="Monopoly Web - Game Simulation & Analysis">
+    <meta property="twitter:description" content="Interactive web interface for Monopoly game simulation and statistical analysis">
+  </head>
+  <body>
+    <noscript>
+      <div style="padding: 2em; text-align: center; font-family: Arial, sans-serif;">
+        <h1>Monopoly Web</h1>
+        <p>This is a JavaScript application. Please enable JavaScript to continue.</p>
+        <p>This app provides interactive Monopoly game simulation and statistical analysis.</p>
+      </div>
+    </noscript>
+    <div id="app">
+      <!-- Loading indicator -->
+      <div style="display: flex; justify-content: center; align-items: center; height: 100vh; font-family: Arial, sans-serif;">
+        <div style="text-align: center;">
+          <h2>Loading Monopoly Web...</h2>
+          <div style="border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 2s linear infinite; margin: 20px auto;"></div>
+        </div>
+      </div>
+    </div>
+    <script src="./js/compiled/app.js"></script>
+    
+    <style>
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+  </body>
+</html>
