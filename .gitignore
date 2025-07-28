@@ -12,3 +12,34 @@ pom.xml.asc
 .lein-failures
 .nrepl-port
 .cpcache/
+
+# Shadow-cljs build artifacts
+/resources/public/js/compiled/
+/.shadow-cljs/
+.shadow-cljs/
+
+# Node modules and npm stuff
+/node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Editor files
+*~
+.#*
+.*.swp
+.*.swo
+*.tmp
+*#
+
+# REPL and development
+.nrepl-history

@@ -14,14 +14,31 @@
 
 (defglobal defaults
   [:body
-   {:color               :red
-    :background-color    :#ddd
-    :background-image    [(linear-gradient :white (px 2) :transparent (px 2))
-                          (linear-gradient (deg 90) :white (px 2) :transparent (px 2))
-                          (linear-gradient (rgba 255 255 255 0.3) (px 1) :transparent (px 1))
-                          (linear-gradient (deg 90) (rgba 255 255 255 0.3) (px 1) :transparent (px 1))]
-    :background-size     [[(px 100) (px 100)] [(px 100) (px 100)] [(px 20) (px 20)] [(px 20) (px 20)]]
-    :background-position [[(px -2) (px -2)] [(px -2) (px -2)] [(px -1) (px -1)] [(px -1) (px -1)]]}])
+   {:color            "#333"
+    :background-color "#f8f9fa"
+    :font-family      "Arial, sans-serif"
+    :margin           0
+    :padding          0}]
+  
+  [:.btn-primary
+   {:background-color "#007bff"
+    :border-color     "#007bff"
+    :color            "#fff"}]
+  
+  [:.btn-secondary
+   {:background-color "#6c757d"
+    :border-color     "#6c757d"
+    :color            "#fff"}]
+    
+  [:.btn-success
+   {:background-color "#28a745"
+    :border-color     "#28a745"
+    :color            "#fff"}]
+    
+  [:.btn-danger
+   {:background-color "#dc3545"
+    :border-color     "#dc3545"
+    :color            "#fff"}])
 
 (defclass level1
   []
