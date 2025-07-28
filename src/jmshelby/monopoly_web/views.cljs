@@ -30,38 +30,42 @@
                            :label    "Single Game w/Deep Analysis"
                            :class    "btn-primary"
                            :style    {:width "100%" :height "60px" :font-size "1.1em"}
-                           :on-click #(do
+                           :on-click #(try
                                        (re-frame/dispatch [::events/set-game-mode :single])
-                                       (re-frame/dispatch [::events/navigate :setup]))]
+                                       (re-frame/dispatch [::events/navigate :setup])
+                                       (catch js/Error e
+                                         (js/console.log "Error in single game click:" e)))]
                           
                           [re-com/button
                            :src      (at)
                            :label    "Run lots of games w/stats"
                            :class    "btn-secondary"
                            :style    {:width "100%" :height "60px" :font-size "1.1em"}
-                           :on-click #(do
+                           :on-click #(try
                                        (re-frame/dispatch [::events/set-game-mode :bulk])
-                                       (re-frame/dispatch [::events/navigate :setup]))]]]]])
+                                       (re-frame/dispatch [::events/navigate :setup])
+                                       (catch js/Error e
+                                         (js/console.log "Error in bulk game click:" e)))]]]]])
 
 ;; Setup Screen (Single or Bulk)
 (defn player-config-row [idx player]
-  [re-com/h-box
-   :src      (at)
-   :gap      "1em"
-   :align    :center
-   :children [[re-com/label
-               :src   (at)
-               :label (str "Player " (inc idx))]
-              
-              [re-com/single-dropdown
-               :src              (at)
-               :choices          [{:id :dumb-v1 :label "Dumb v1"}
-                                  {:id :dumb-v2 :label "Dumb v2"} 
-                                  {:id :future-player :label "Future Player v"}]
-               :model            (:type player :dumb-v1)
-               :width            "150px"
-               :on-change        #(re-frame/dispatch [::events/update-players 
-                                                     (assoc-in @(re-frame/subscribe [::subs/players]) [idx :type] %)])]]])
+  (let [current-players (re-frame/subscribe [::subs/players])]
+    [re-com/h-box
+     :src      (at)
+     :gap      "1em"
+     :align    :center
+     :children [[re-com/label
+                 :src   (at)
+                 :label (str "Player " (inc idx))]
+                
+                [re-com/single-dropdown
+                 :src              (at)
+                 :choices          [{:id :dumb-v1 :label "Dumb v1"}
+                                    {:id :dumb-v2 :label "Dumb v2"} 
+                                    {:id :future-player :label "Future Player v"}]
+                 :model            (:type player :dumb-v1)
+                 :width            "150px"
+                 :on-change        #(re-frame/dispatch [::events/add-game-log-entry (str "Player " (inc idx) " type changed")])]]]))
 
 (defn setup-panel []
   (let [mode (re-frame/subscribe [::subs/game-mode])
@@ -239,7 +243,15 @@
                                          :class    (if @running? "btn-danger" "btn-success")
                                          :on-click #(re-frame/dispatch (if @running? 
                                                                         [::events/stop-single-game]
-                                                                        [::events/start-single-game]))]]]]]
+                                                                        [::events/start-single-game]))]
+                                        
+                                        (when @running?
+                                          [re-com/button
+                                           :src      (at)
+                                           :label    "Roll Dice"
+                                           :class    "btn-primary"
+                                           :style    {:margin-left "10px"}
+                                           :on-click #(re-frame/dispatch [::events/simulate-dice-roll])])]]]]
                 
                 [re-com/h-box
                  :src      (at)
@@ -332,4 +344,6 @@
     [re-com/v-box
      :src      (at)
      :height   "100%"
-     :children [(routes/panels @active-panel)]]))
+     :children [(if @active-panel
+                  (routes/panels @active-panel)
+                  [re-com/label :src (at) :label "Loading..."])]]))

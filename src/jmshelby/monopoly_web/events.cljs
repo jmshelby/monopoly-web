@@ -2,6 +2,7 @@
   (:require
    [re-frame.core :as re-frame]
    [jmshelby.monopoly-web.db :as db]
+   [jmshelby.monopoly.core :as monopoly-core]
    ))
 
 (re-frame/reg-event-db
@@ -36,58 +37,78 @@
  (fn [db [_ game-state]]
    (assoc-in db [:single-game :state] game-state)))
 
-(re-frame/reg-event-fx
+(re-frame/reg-event-db
  ::start-single-game
- (fn [{:keys [db]} _]
-   (let [players (get-in db [:game-setup :players])]
-     {:db (-> db
-              (assoc-in [:single-game :running?] true)
-              (assoc-in [:single-game :log] [])
-              (assoc-in [:single-game :state] nil))
-      :dispatch [::create-game (count players)]})))
+ (fn [db _]
+   (let [players (get-in db [:game-setup :players])
+         player-count (if (and players (seq players)) 
+                        (count players) 
+                        4)
+         initial-log [(str "Starting complete monopoly game with " player-count " players...")
+                      "Running game simulation..."]]
+     (-> db
+         (assoc-in [:single-game :running?] true)
+         (assoc-in [:single-game :log] initial-log)
+         (assoc-in [:single-game :state] nil))
+     
+     ;; Run the actual monopoly game in a setTimeout to avoid blocking UI
+     (js/setTimeout 
+       (fn []
+         (try
+           (let [final-game-state (monopoly-core/rand-game-end-state player-count)
+                 winner-id (when (= 1 (->> (:players final-game-state) 
+                                           (filter #(= :playing (:status %))) 
+                                           count))
+                             (->> (:players final-game-state)
+                                  (filter #(= :playing (:status %)))
+                                  first
+                                  :id))
+                 transaction-count (count (:transactions final-game-state))
+                 completion-log [(str "Game completed! Total transactions: " transaction-count)
+                                (if winner-id 
+                                  (str "Winner: " winner-id)
+                                  "Game ended without a clear winner")
+                                (if (:exception final-game-state)
+                                  (str "Game ended with exception: " (get-in final-game-state [:exception :message]))
+                                  "")
+                                (if (:failsafe-stop final-game-state)
+                                  "Game ended due to failsafe limit"
+                                  "")]]
+             (re-frame/dispatch [::set-single-game-state final-game-state])
+             (re-frame/dispatch [::add-game-log-entries completion-log])
+             (re-frame/dispatch [::set-single-game-running false]))
+           (catch js/Error e
+             (re-frame/dispatch [::add-game-log-entry (str "Error running game: " (.-message e))])
+             (re-frame/dispatch [::set-single-game-running false]))))
+       100)
+     
+     db)))
 
-(re-frame/reg-event-fx
+(re-frame/reg-event-db
  ::stop-single-game
- (fn [{:keys [db]} _]
-   {:db (assoc-in db [:single-game :running?] false)
-    :dispatch [::add-game-log-entry "Game stopped by user"]}))
+ (fn [db _]
+   (-> db
+       (assoc-in [:single-game :running?] false)
+       (update-in [:single-game :log] conj "Game stopped by user"))))
 
-(re-frame/reg-event-fx
- ::create-game
- (fn [{:keys [db]} [_ player-count]]
-   {:db db
-    :dispatch [::add-game-log-entry (str "Creating new game with " player-count " players...")]
-    :timeout {:id :game-creation
-              :event [::game-created player-count]
-              :time 1000}}))
+(re-frame/reg-event-db
+ ::add-game-log-entry
+ (fn [db [_ entry]]
+   (update-in db [:single-game :log] conj entry)))
 
-(re-frame/reg-event-fx
- ::game-created
- (fn [{:keys [db]} [_ player-count]]
-   (let [mock-game-state {:status :playing
-                          :players (vec (for [i (range player-count)]
-                                         {:id (str "Player-" (inc i))
-                                          :status :playing
-                                          :cash 1500
-                                          :cell-residency 0}))
-                          :current-turn {:player "Player-1" :dice-rolls []}
-                          :transactions []}]
-     {:db (assoc-in db [:single-game :state] mock-game-state)
-      :dispatch-n [[::add-game-log-entry "Game created successfully!"]
-                   [::add-game-log-entry "Players starting with $1500 each"]
-                   [::start-game-loop]]})))
+(re-frame/reg-event-db
+ ::add-game-log-entries
+ (fn [db [_ entries]]
+   (update-in db [:single-game :log] #(apply conj % entries))))
 
-(re-frame/reg-event-fx
- ::start-game-loop
- (fn [{:keys [db]} _]
-   {:dispatch [::add-game-log-entry "Game starting... Player-1's turn"]
-    :timeout {:id :game-turn
-              :event [::advance-game]
-              :time 2000}}))
+(re-frame/reg-event-db
+ ::set-single-game-running
+ (fn [db [_ running?]]
+   (assoc-in db [:single-game :running?] running?)))
 
-(re-frame/reg-event-fx
- ::advance-game
- (fn [{:keys [db]} _]
+(re-frame/reg-event-db
+ ::simulate-dice-roll
+ (fn [db _]
    (let [running? (get-in db [:single-game :running?])
          game-state (get-in db [:single-game :state])]
      (if (and running? game-state (= :playing (:status game-state)))
@@ -99,27 +120,13 @@
                                     :player current-player
                                     :roll dice-roll
                                     :total roll-total})
-             updated-state (assoc game-state :transactions new-transactions)]
-         {:db (assoc-in db [:single-game :state] updated-state)
-          :dispatch-n [[::add-game-log-entry 
-                        (str current-player " rolled " dice-roll " (total: " roll-total ")")]
-                       [::add-game-log-entry 
-                        (str current-player " moved " roll-total " spaces")]]
-          :timeout {:id :game-turn
-                    :event [::advance-game] 
-                    :time 3000}})
-       {:dispatch [::add-game-log-entry "Game loop stopped"]}))))
-
-(re-frame/reg-event-db
- ::add-game-log-entry
- (fn [db [_ entry]]
-   (update-in db [:single-game :log] conj entry)))
-
-;; Timeout effect
-(re-frame/reg-fx
- :timeout
- (fn [{:keys [id event time]}]
-   (js/setTimeout #(re-frame/dispatch event) time)))
+             updated-state (assoc game-state :transactions new-transactions)
+             new-log-entries [(str current-player " rolled " dice-roll " (total: " roll-total ")")
+                              (str current-player " moved " roll-total " spaces")]]
+         (-> db
+             (assoc-in [:single-game :state] updated-state)
+             (update-in [:single-game :log] #(apply conj % new-log-entries))))
+       db))))
 
 ;; Bulk simulation events
 (re-frame/reg-event-db
