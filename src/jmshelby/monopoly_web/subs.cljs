@@ -60,6 +60,11 @@
  (fn [db _]
    (get-in db [:bulk-simulation :config])))
 
+(re-frame/reg-sub
+ ::bulk-sim-config-games
+ (fn [db _]
+   (get-in db [:bulk-simulation :config :games])))
+
 ;; UI state subscriptions
 (re-frame/reg-sub
  ::loading?
