@@ -163,7 +163,7 @@
      
      [:div {:style {:margin-top "2em"}}
       [:h3 "Transaction Log"]
-      [:div {:style {:background-color "#f8f8f8" :padding "1em" :height "300px" :overflow "auto" :font-family "monospace"}}
+      [:div {:style {:background-color "#f8f8f8" :padding "1em" :height "600px" :overflow "auto" :font-family "monospace"}}
        (if (and @game-state (:transactions @game-state) (seq (:transactions @game-state)))
          (for [[idx tx] (map-indexed vector (:transactions @game-state))]
            [:p {:key idx :style {:font-size "11px" :margin "1px 0" :line-height "1.3"}} 
