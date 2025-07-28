@@ -49,7 +49,7 @@ The project is configured for automatic deployment to GitHub Pages via GitHub Ac
 
 1. Push to `main` branch
 2. GitHub Actions will automatically build and deploy
-3. Site will be available at `https://yourusername.github.io/monopoly-web/`
+3. Site will be available at `https://jmshelby.github.io/monopoly-web/`
 
 **Setup:**
 1. Enable GitHub Pages in repository settings
