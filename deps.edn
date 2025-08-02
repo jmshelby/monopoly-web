@@ -1,9 +1,13 @@
-{:paths ["src" "test" "../monopoly/src"]
+{:paths ["src" "test"]
 
  :deps {org.clojure/clojure {:mvn/version "1.11.1"}
         
         ;; Build Tool
         thheller/shadow-cljs {:mvn/version "2.25.8"}
+        
+        ;; Game Logic
+        jmshelby/monopoly {:git/url "https://github.com/jmshelby/monopoly.git"
+                           :git/sha "a4b20cb7c0edbb12020a9f56da0ed7140ec4402c"}
         
         ;; UI Libraries
         reagent/reagent {:mvn/version "1.1.1"}
