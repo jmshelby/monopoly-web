@@ -17,7 +17,7 @@
    :height   "100vh"
    :children [[re-com/title
                :src   (at)
-               :label "Battle-opoly"
+               :label "Monopolyistics"
                :level :level1
                :style {:font-size "3em" :margin-bottom "1em"}]
               
