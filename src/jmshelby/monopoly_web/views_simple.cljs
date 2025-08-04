@@ -8,7 +8,7 @@
 ;; Simple HTML-based components without re-com
 (defn simple-battle-opoly-panel []
   [:div {:style {:text-align "center" :padding "2em"}}
-   [:h1 "Battle-opoly"]
+   [:h1 "Monopolyistics"]
    [:div
     [:button {:style {:display "block" :margin "1em auto" :padding "1em 2em"}
               :on-click #(do
