@@ -3,19 +3,22 @@
    [re-frame.core :as re-frame]
    [jmshelby.monopoly-web.events :as events]
    [jmshelby.monopoly-web.routes :as routes]
-   [jmshelby.monopoly-web.subs :as subs]))
+   [jmshelby.monopoly-web.subs :as subs]
+   [jmshelby.monopoly-web.styles :as styles]))
 
 ;; Simple HTML-based components without re-com
 (defn simple-battle-opoly-panel []
   [:div {:style {:text-align "center" :padding "2em"}}
    [:h1 "Monopolyistics"]
    [:div
-    [:button {:style {:display "block" :margin "1em auto" :padding "1em 2em"}
+    [:button {:class "btn-primary"
+              :style {:display "block" :margin "1em auto"}
               :on-click #(do
                           (re-frame/dispatch [::events/set-game-mode :single])
                           (re-frame/dispatch [::events/navigate :setup]))}
      "Single Game w/Deep Analysis"]
-    [:button {:style {:display "block" :margin "1em auto" :padding "1em 2em"}
+    [:button {:class "btn-primary"
+              :style {:display "block" :margin "1em auto"}
               :on-click #(do
                           (re-frame/dispatch [::events/set-game-mode :bulk])
                           (re-frame/dispatch [::events/navigate :setup]))}
@@ -32,10 +35,11 @@
       [:p "Player 3: Dumb v1"]
       [:p "Player 4: Future Player v"]]
      [:div
-      [:button {:style {:margin-right "1em"}
+      [:button {:class "btn-secondary"
+                :style {:margin-right "1em"}
                 :on-click #(re-frame/dispatch [::events/navigate :battle-opoly])}
        "← Back"]
-      [:button {:style {:background-color "#007bff" :color "white" :border "none" :padding "0.5em 1em"}
+      [:button {:class "btn-success"
                 :on-click #(re-frame/dispatch [::events/navigate 
                                               (if (= @mode :single) 
                                                 :single-game
@@ -66,7 +70,7 @@
      
      [:div {:style {:margin-top "2em"}}
       [:h3 "Game Summary"]
-      [:div {:style {:background-color "#f5f5f5" :padding "1em" :min-height "200px" :font-family "monospace" :font-size "12px" :overflow "auto"}}
+      [:div {:class "code-block" :style {:min-height "200px" :font-size "12px"}}
        (if @game-state
          (let [players (:players @game-state)
                transactions (:transactions @game-state)
@@ -163,7 +167,7 @@
      
      [:div {:style {:margin-top "2em"}}
       [:h3 "Transaction Log"]
-      [:div {:style {:background-color "#f8f8f8" :padding "1em" :height "600px" :overflow "auto" :font-family "monospace"}}
+      [:div {:class "code-block" :style {:height "600px"}}
        (if (and @game-state (:transactions @game-state) (seq (:transactions @game-state)))
          (for [[idx tx] (map-indexed vector (:transactions @game-state))]
            [:p {:key idx :style {:font-size "11px" :margin "1px 0" :line-height "1.3"}} 
@@ -281,7 +285,7 @@
      
      ;; Configuration section
      (when-not @running?
-       [:div {:style {:margin-top "2em" :background-color "#f5f5f5" :padding "1em"}}
+       [:div {:class "code-block" :style {:margin-top "2em"}}
         [:h3 "Simulation Configuration"]
         [:div
          [:label "Number of games: "]
@@ -311,7 +315,7 @@
      (when @results
        [:div {:style {:margin-top "2em"}}
         [:h3 "Simulation Results"]
-        [:div {:style {:background-color "#f8f8f8" :padding "1em" :font-family "monospace" :font-size "12px"}}
+        [:div {:class "code-block" :style {:font-size "12px"}}
          [:div {:style {:margin-bottom "1em"}}
           [:strong "🚀 PERFORMANCE"] [:br]
           (str "   Total Games: " (:total-games @results)) [:br]
