@@ -171,7 +171,7 @@
       [:div {:class "code-block" :style {:height "600px"}}
        (if (and @game-state (:transactions @game-state) (seq (:transactions @game-state)))
          [:pre {:style {:font-size "11px" :margin "0" :line-height "1.3" :white-space "pre-wrap"}}
-          (analysis/print-transaction-log @game-state)]
+          (with-out-str (analysis/print-transaction-log @game-state))]
          [:p "Transaction details will appear here..."])]]]))
 
 (defn simple-bulk-simulation-panel []
