@@ -4,7 +4,8 @@
    [jmshelby.monopoly-web.events :as events]
    [jmshelby.monopoly-web.routes :as routes]
    [jmshelby.monopoly-web.subs :as subs]
-   [jmshelby.monopoly-web.styles :as styles]))
+   [jmshelby.monopoly-web.styles :as styles]
+   [jmshelby.monopoly.analysis :as analysis]))
 
 ;; Simple HTML-based components without re-com
 (defn simple-battle-opoly-panel []
@@ -169,93 +170,8 @@
       [:h3 "Transaction Log"]
       [:div {:class "code-block" :style {:height "600px"}}
        (if (and @game-state (:transactions @game-state) (seq (:transactions @game-state)))
-         (for [[idx tx] (map-indexed vector (:transactions @game-state))]
-           [:p {:key idx :style {:font-size "11px" :margin "1px 0" :line-height "1.3"}} 
-            (let [tx-num (inc idx)
-                  format-money (fn [amount] (str "$" amount))
-                  format-property (fn [prop-name] 
-                                   (if prop-name
-                                     (clojure.string/replace (name prop-name) #"-" " ")
-                                     "unknown"))]
-              (case (:type tx)
-                :roll 
-                (let [roll-result (:roll tx)
-                      roll-total (apply + roll-result)
-                      is-double? (apply = roll-result)]
-                  (str "[" tx-num "] " (:player tx) " rolls " roll-total
-                       (when is-double? " (rolled double)")))
-                
-                :move
-                (str "[" tx-num "] " (:player tx) " moves to " 
-                     (get {:go "GO" :jail "Jail" :free "Free Parking" :go-to-jail "Go to Jail"} 
-                          (:after-cell tx) (str "Cell " (:after-cell tx))))
-                
-                :purchase 
-                (str "[" tx-num "] " (:player tx) " purchases " 
-                     (format-property (:property tx)) " for " (format-money (:price tx)))
-                
-                :payment
-                (cond 
-                  (= (:reason tx) :rent)
-                  (str "[" tx-num "] *" (:from tx) " pays " (format-money (:amount tx)) 
-                       " rent to " (:to tx) "*")
-                  
-                  (= (:reason tx) :tax)
-                  (str "[" tx-num "] " (:from tx) " pays " (format-money (:amount tx)) " tax to bank")
-                  
-                  (= (:reason tx) :allowance)
-                  (str "[" tx-num "] " (:to tx) " collects " (format-money (:amount tx)) " passing GO")
-                  
-                  :else
-                  (str "[" tx-num "] " (:from tx) " pays " (format-money (:amount tx)) 
-                       " to " (:to tx) " (" (name (:reason tx)) ")"))
-                
-                :purchase-house 
-                (str "[" tx-num "] " (:player tx) " builds house on " 
-                     (format-property (:property tx)) " for " (format-money (:price tx)))
-                
-                :sell-house 
-                (str "[" tx-num "] " (:player tx) " sells house on " 
-                     (format-property (:property tx)) " for " (format-money (:proceeds tx)))
-                
-                :mortgage-property 
-                (str "[" tx-num "] " (:player tx) " mortgages " 
-                     (format-property (:property tx)) " for " (format-money (:proceeds tx)))
-                
-                :unmortgage-property 
-                (str "[" tx-num "] " (:player tx) " unmortgages " 
-                     (format-property (:property tx)) " for " (format-money (:cost tx)))
-                
-                :bail 
-                (case (first (:means tx))
-                  :roll (str "[" tx-num "] " (:player tx) " gets out of jail with double roll " (second (:means tx)))
-                  :cash (str "[" tx-num "] " (:player tx) " pays " (format-money (second (:means tx))) " bail to get out of jail")
-                  :card (str "[" tx-num "] " (:player tx) " uses Get Out of Jail Free card")
-                  (str "[" tx-num "] " (:player tx) " gets out of jail"))
-                
-                :go-to-jail 
-                (str "[" tx-num "] " (:player tx) " goes to jail")
-                
-                :bankruptcy 
-                (str "[" tx-num "] !!!" (:player tx) " goes bankrupt!!!")
-                
-                :auction-initiated 
-                (str "[" tx-num "] Auction initiated for " (format-property (:property tx)))
-                
-                :auction-completed 
-                (str "[" tx-num "] " (:winner tx) " wins auction for " 
-                     (format-property (:property tx)) " with bid " (format-money (:winning-bid tx)))
-                
-                :trade 
-                (if (= (:status tx) :accept)
-                  (str "[" tx-num "] " (:from tx) " and " (:to tx) " complete trade")
-                  (str "[" tx-num "] " (:from tx) " proposes trade to " (:to tx)))
-                
-                :card 
-                (str "[" tx-num "] " (:player tx) " draws card: " (:description tx))
-                
-                ;; Default case
-                (str "[" tx-num "] " (:type tx) " - " (pr-str (dissoc tx :type)))))])
+         [:pre {:style {:font-size "11px" :margin "0" :line-height "1.3" :white-space "pre-wrap"}}
+          (analysis/print-transaction-log @game-state)]
          [:p "Transaction details will appear here..."])]]]))
 
 (defn simple-bulk-simulation-panel []
