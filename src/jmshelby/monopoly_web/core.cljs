@@ -6,6 +6,7 @@
    [jmshelby.monopoly-web.routes :as routes]
    [jmshelby.monopoly-web.views-simple :as views]
    [jmshelby.monopoly-web.config :as config]
+   [jmshelby.monopoly-web.styles :as styles]
    ))
 
 
