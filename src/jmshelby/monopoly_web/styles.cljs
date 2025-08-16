@@ -16,9 +16,9 @@
   [:body
    {:color            "#cccccc !important"
     :background-color "#0f0f23 !important"
-    :font-family      "\"Source Code Pro\", monospace !important"
-    :font-weight      "300 !important"
-    :font-size        "14pt !important"
+    :font-family      "\"Courier New\", \"Monaco\", \"Consolas\", monospace !important"
+    :font-weight      "normal !important"
+    :font-size        "13pt !important"
     :margin           "0 !important"
     :padding          "0 !important"
     :min-width        "60em"}]
@@ -33,8 +33,8 @@
   
   [:h1 :h2 :h3 :h4 :h5 :h6
    {:color "#00cc00"
-    :font-family "\"Source Code Pro\", monospace"
-    :font-weight "300"
+    :font-family "\"Courier New\", \"Monaco\", \"Consolas\", monospace"
+    :font-weight "bold"
     :text-shadow "0 0 2px #00cc00, 0 0 5px #00cc00"}]
     
   [:a
@@ -48,9 +48,9 @@
    {:background-color "#10101a"
     :border "1px solid #333340"
     :color "#cccccc"
-    :font-family "\"Source Code Pro\", monospace"
-    :font-weight "300"
-    :font-size "14pt"
+    :font-family "\"Courier New\", \"Monaco\", \"Consolas\", monospace"
+    :font-weight "normal"
+    :font-size "13pt"
     :padding "0.5em 1em"
     :cursor "pointer"
     :transition "all 0.2s ease"}
@@ -95,9 +95,9 @@
    {:background-color "transparent"
     :border "1px solid #666666"
     :color "#cccccc"
-    :font-family "\"Source Code Pro\", monospace"
-    :font-weight "300"
-    :font-size "14pt"
+    :font-family "\"Courier New\", \"Monaco\", \"Consolas\", monospace"
+    :font-weight "normal"
+    :font-size "13pt"
     :padding "0.3em 0.5em"}
    [:&:focus
     {:border-color "#009900"
@@ -108,8 +108,8 @@
    {:background-color "#10101a"
     :border "1px solid #333340"
     :color "#cccccc"
-    :font-family "\"Source Code Pro\", monospace"
-    :font-weight "300"
+    :font-family "\"Courier New\", \"Monaco\", \"Consolas\", monospace"
+    :font-weight "normal"
     :padding "1em"
     :overflow "auto"}]
     
