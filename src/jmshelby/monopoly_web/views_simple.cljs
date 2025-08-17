@@ -62,7 +62,7 @@
                 :on-click #(re-frame/dispatch (if @running? 
                                               [::events/stop-single-game]
                                               [::events/start-single-game]))}
-       (if @running? "Stop Game" "Start Game")]
+       (if @running? "Stop Game" "Play Game")]
       (when @running?
         [:button {:style {:background-color "#007bff" :color "white" :border "none" 
                           :padding "0.5em 1em" :margin-left "1em"}
