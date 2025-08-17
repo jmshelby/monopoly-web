@@ -1,32 +1,32 @@
 {:paths ["src" "test"]
 
  :deps {org.clojure/clojure {:mvn/version "1.11.1"}
-        
+
         ;; Build Tool
         thheller/shadow-cljs {:mvn/version "2.25.8"}
-        
+
         ;; Game Logic
         jmshelby/monopoly {:git/url "https://github.com/jmshelby/monopoly.git"
-                           :git/sha "a4b20cb7c0edbb12020a9f56da0ed7140ec4402c"}
-        
+                           :git/sha "5a60da71b73015adc6452de0d329cc864b1bceb7"}
+
         ;; UI Libraries
         reagent/reagent {:mvn/version "1.1.1"}
         re-frame/re-frame {:mvn/version "1.4.2"}
         re-com/re-com {:mvn/version "2.13.2"}
-        
+
         ;; Routing
         bidi/bidi {:mvn/version "2.1.6"}
         clj-commons/pushy {:mvn/version "0.3.10"}
-        
+
         ;; CSS
         garden/garden {:mvn/version "1.3.10"}
         net.dhleong/spade {:mvn/version "1.1.0"}
-        
+
         ;; Development Tools
         binaryage/devtools {:mvn/version "1.0.6"}
         re-frisk/re-frisk {:mvn/version "1.6.0"}
         cider/cider-nrepl {:mvn/version "0.44.0"}
-        
+
         ;; Core Libraries
         org.clojure/core.async {:mvn/version "1.6.681"}
         org.clojure/core.memoize {:mvn/version "1.1.266"}}

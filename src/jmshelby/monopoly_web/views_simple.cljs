@@ -3,19 +3,23 @@
    [re-frame.core :as re-frame]
    [jmshelby.monopoly-web.events :as events]
    [jmshelby.monopoly-web.routes :as routes]
-   [jmshelby.monopoly-web.subs :as subs]))
+   [jmshelby.monopoly-web.subs :as subs]
+   [jmshelby.monopoly-web.styles :as styles]
+   [jmshelby.monopoly.analysis :as analysis]))
 
 ;; Simple HTML-based components without re-com
 (defn simple-battle-opoly-panel []
   [:div {:style {:text-align "center" :padding "2em"}}
    [:h1 "Monopolyistics"]
    [:div
-    [:button {:style {:display "block" :margin "1em auto" :padding "1em 2em"}
+    [:button {:class "btn-primary"
+              :style {:display "block" :margin "1em auto"}
               :on-click #(do
                           (re-frame/dispatch [::events/set-game-mode :single])
                           (re-frame/dispatch [::events/navigate :setup]))}
      "Single Game w/Deep Analysis"]
-    [:button {:style {:display "block" :margin "1em auto" :padding "1em 2em"}
+    [:button {:class "btn-primary"
+              :style {:display "block" :margin "1em auto"}
               :on-click #(do
                           (re-frame/dispatch [::events/set-game-mode :bulk])
                           (re-frame/dispatch [::events/navigate :setup]))}
@@ -32,10 +36,11 @@
       [:p "Player 3: Dumb v1"]
       [:p "Player 4: Future Player v"]]
      [:div
-      [:button {:style {:margin-right "1em"}
+      [:button {:class "btn-secondary"
+                :style {:margin-right "1em"}
                 :on-click #(re-frame/dispatch [::events/navigate :battle-opoly])}
        "← Back"]
-      [:button {:style {:background-color "#007bff" :color "white" :border "none" :padding "0.5em 1em"}
+      [:button {:class "btn-success"
                 :on-click #(re-frame/dispatch [::events/navigate 
                                               (if (= @mode :single) 
                                                 :single-game
@@ -57,7 +62,7 @@
                 :on-click #(re-frame/dispatch (if @running? 
                                               [::events/stop-single-game]
                                               [::events/start-single-game]))}
-       (if @running? "Stop Game" "Start Game")]
+       (if @running? "Stop Game" "Play Game")]
       (when @running?
         [:button {:style {:background-color "#007bff" :color "white" :border "none" 
                           :padding "0.5em 1em" :margin-left "1em"}
@@ -66,7 +71,7 @@
      
      [:div {:style {:margin-top "2em"}}
       [:h3 "Game Summary"]
-      [:div {:style {:background-color "#f5f5f5" :padding "1em" :min-height "200px" :font-family "monospace" :font-size "12px" :overflow "auto"}}
+      [:div {:class "code-block" :style {:min-height "200px" :font-size "12px"}}
        (if @game-state
          (let [players (:players @game-state)
                transactions (:transactions @game-state)
@@ -163,95 +168,11 @@
      
      [:div {:style {:margin-top "2em"}}
       [:h3 "Transaction Log"]
-      [:div {:style {:background-color "#f8f8f8" :padding "1em" :height "600px" :overflow "auto" :font-family "monospace"}}
+      [:div {:class "code-block" :style {:height "600px"}}
        (if (and @game-state (:transactions @game-state) (seq (:transactions @game-state)))
-         (for [[idx tx] (map-indexed vector (:transactions @game-state))]
-           [:p {:key idx :style {:font-size "11px" :margin "1px 0" :line-height "1.3"}} 
-            (let [tx-num (inc idx)
-                  format-money (fn [amount] (str "$" amount))
-                  format-property (fn [prop-name] 
-                                   (if prop-name
-                                     (clojure.string/replace (name prop-name) #"-" " ")
-                                     "unknown"))]
-              (case (:type tx)
-                :roll 
-                (let [roll-result (:roll tx)
-                      roll-total (apply + roll-result)
-                      is-double? (apply = roll-result)]
-                  (str "[" tx-num "] " (:player tx) " rolls " roll-total
-                       (when is-double? " (rolled double)")))
-                
-                :move
-                (str "[" tx-num "] " (:player tx) " moves to " 
-                     (get {:go "GO" :jail "Jail" :free "Free Parking" :go-to-jail "Go to Jail"} 
-                          (:after-cell tx) (str "Cell " (:after-cell tx))))
-                
-                :purchase 
-                (str "[" tx-num "] " (:player tx) " purchases " 
-                     (format-property (:property tx)) " for " (format-money (:price tx)))
-                
-                :payment
-                (cond 
-                  (= (:reason tx) :rent)
-                  (str "[" tx-num "] *" (:from tx) " pays " (format-money (:amount tx)) 
-                       " rent to " (:to tx) "*")
-                  
-                  (= (:reason tx) :tax)
-                  (str "[" tx-num "] " (:from tx) " pays " (format-money (:amount tx)) " tax to bank")
-                  
-                  (= (:reason tx) :allowance)
-                  (str "[" tx-num "] " (:to tx) " collects " (format-money (:amount tx)) " passing GO")
-                  
-                  :else
-                  (str "[" tx-num "] " (:from tx) " pays " (format-money (:amount tx)) 
-                       " to " (:to tx) " (" (name (:reason tx)) ")"))
-                
-                :purchase-house 
-                (str "[" tx-num "] " (:player tx) " builds house on " 
-                     (format-property (:property tx)) " for " (format-money (:price tx)))
-                
-                :sell-house 
-                (str "[" tx-num "] " (:player tx) " sells house on " 
-                     (format-property (:property tx)) " for " (format-money (:proceeds tx)))
-                
-                :mortgage-property 
-                (str "[" tx-num "] " (:player tx) " mortgages " 
-                     (format-property (:property tx)) " for " (format-money (:proceeds tx)))
-                
-                :unmortgage-property 
-                (str "[" tx-num "] " (:player tx) " unmortgages " 
-                     (format-property (:property tx)) " for " (format-money (:cost tx)))
-                
-                :bail 
-                (case (first (:means tx))
-                  :roll (str "[" tx-num "] " (:player tx) " gets out of jail with double roll " (second (:means tx)))
-                  :cash (str "[" tx-num "] " (:player tx) " pays " (format-money (second (:means tx))) " bail to get out of jail")
-                  :card (str "[" tx-num "] " (:player tx) " uses Get Out of Jail Free card")
-                  (str "[" tx-num "] " (:player tx) " gets out of jail"))
-                
-                :go-to-jail 
-                (str "[" tx-num "] " (:player tx) " goes to jail")
-                
-                :bankruptcy 
-                (str "[" tx-num "] !!!" (:player tx) " goes bankrupt!!!")
-                
-                :auction-initiated 
-                (str "[" tx-num "] Auction initiated for " (format-property (:property tx)))
-                
-                :auction-completed 
-                (str "[" tx-num "] " (:winner tx) " wins auction for " 
-                     (format-property (:property tx)) " with bid " (format-money (:winning-bid tx)))
-                
-                :trade 
-                (if (= (:status tx) :accept)
-                  (str "[" tx-num "] " (:from tx) " and " (:to tx) " complete trade")
-                  (str "[" tx-num "] " (:from tx) " proposes trade to " (:to tx)))
-                
-                :card 
-                (str "[" tx-num "] " (:player tx) " draws card: " (:description tx))
-                
-                ;; Default case
-                (str "[" tx-num "] " (:type tx) " - " (pr-str (dissoc tx :type)))))])
+         [:pre {:style {:font-size "11px" :margin "0" :line-height "1.3" :white-space "pre-wrap" 
+                        :color "#cccccc" :background-color "transparent"}}
+          (with-out-str (analysis/print-transaction-log @game-state))]
          [:p "Transaction details will appear here..."])]]]))
 
 (defn simple-bulk-simulation-panel []
@@ -281,7 +202,7 @@
      
      ;; Configuration section
      (when-not @running?
-       [:div {:style {:margin-top "2em" :background-color "#f5f5f5" :padding "1em"}}
+       [:div {:class "code-block" :style {:margin-top "2em"}}
         [:h3 "Simulation Configuration"]
         [:div
          [:label "Number of games: "]
@@ -311,7 +232,7 @@
      (when @results
        [:div {:style {:margin-top "2em"}}
         [:h3 "Simulation Results"]
-        [:div {:style {:background-color "#f8f8f8" :padding "1em" :font-family "monospace" :font-size "12px"}}
+        [:div {:class "code-block" :style {:font-size "12px"}}
          [:div {:style {:margin-bottom "1em"}}
           [:strong "🚀 PERFORMANCE"] [:br]
           (str "   Total Games: " (:total-games @results)) [:br]
