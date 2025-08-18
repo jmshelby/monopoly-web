@@ -183,10 +183,11 @@
       :monopoly/simulation {:num-games num-games
                             :num-players player-count}})))
 
-(re-frame/reg-event-db
+(re-frame/reg-event-fx
  ::stop-bulk-simulation
- (fn [db _]
-   (assoc-in db [:bulk-simulation :running?] false)))
+ (fn [{:keys [db]} _]
+   {:db (assoc-in db [:bulk-simulation :running?] false)
+    :monopoly/simulation-stop (get-in db [:bulk-simulation :output-chan])}))
 
 (re-frame/reg-event-db
  ::bulk-sim-started
@@ -207,7 +208,7 @@
          prev-results (get-in db [:bulk-simulation :results])
          new-results (conj prev-results game)
          new-stats (core-sim/calculate-statistics new-results
-                                                  total-games
+                                                  (count new-results)
                                                   duration-ms)
          more-games? (not= total-games (count new-results))]
 
@@ -218,7 +219,8 @@
               ;; Keep that game's results
                (assoc-in [:bulk-simulation :results] new-results)
               ;; Update progress counter
-               (assoc-in [:bulk-simulation :progress] (count new-results)))}
+               (assoc-in [:bulk-simulation :progress] (count new-results))
+               (assoc-in [:bulk-simulation :running?] more-games?))}
       ;; If there are more games needed, we need to invoke an fx for that
       (when more-games?
         [:monopoly/simulation-continue output-ch])))))
