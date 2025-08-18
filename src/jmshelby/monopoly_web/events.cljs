@@ -216,7 +216,9 @@
               ;; Recalc new bulk stats with this additional game
                (assoc-in [:bulk-simulation :stats] new-stats)
               ;; Keep that game's results
-               (assoc-in [:bulk-simulation :results] new-results))}
+               (assoc-in [:bulk-simulation :results] new-results)
+              ;; Update progress counter
+               (assoc-in [:bulk-simulation :progress] (count new-results)))}
       ;; If there are more games needed, we need to invoke an fx for that
       (when more-games?
         [:monopoly/simulation-continue output-ch])))))

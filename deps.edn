@@ -7,7 +7,7 @@
 
         ;; Game Logic
         jmshelby/monopoly {:git/url "https://github.com/jmshelby/monopoly.git"
-                           :git/sha "4410665b398849aeef1d49e8165e5f24cfa679c0"}
+                           :git/sha "145bcde91bc2583ea761b9f512865fac97e0866d"}
 
         ;; UI Libraries
         reagent/reagent {:mvn/version "1.1.1"}
