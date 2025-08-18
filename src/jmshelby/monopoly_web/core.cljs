@@ -23,10 +23,10 @@
 (defn- wait-for-next-game
   [chan]
   (async/go
-    (let [game (async/<! chan)
-          event :jmshelby.monopoly-web.events/bulk-sim-game-finished]
+    (when-let [game (async/<! chan)]
       (println "new game ready, dispatching ...")
-      (re-frame/dispatch [event game])
+      (re-frame/dispatch [:jmshelby.monopoly-web.events/bulk-sim-game-finished
+                          game])
       (println "new game ready, dispatching ...continuing"))))
 
 ;; An event to start a bulk simulation of monopoly games
