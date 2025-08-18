@@ -1,9 +1,11 @@
 (ns jmshelby.monopoly-web.events
   (:require
+   [clojure.core.async :as async]
    [re-frame.core :as re-frame]
    [jmshelby.monopoly-web.db :as db]
+   [jmshelby.monopoly.util.time :as time]
    [jmshelby.monopoly.core :as monopoly-core]
-   ))
+   [jmshelby.monopoly.simulation :as core-sim]))
 
 (re-frame/reg-event-db
  ::initialize-db
@@ -31,7 +33,7 @@
  (fn [db [_ players]]
    (assoc-in db [:game-setup :players] players)))
 
-;; Single game events  
+;; Single game events 
 (re-frame/reg-event-db
  ::set-single-game-state
  (fn [db [_ game-state]]
@@ -41,8 +43,8 @@
  ::start-single-game
  (fn [db _]
    (let [players (get-in db [:game-setup :players])
-         player-count (if (and players (seq players)) 
-                        (count players) 
+         player-count (if (and players (seq players))
+                        (count players)
                         4)
          initial-log [(str "Starting complete monopoly game with " player-count " players...")
                       "Running game simulation..."]]
@@ -50,14 +52,14 @@
          (assoc-in [:single-game :running?] true)
          (assoc-in [:single-game :log] initial-log)
          (assoc-in [:single-game :state] nil))
-     
+
      ;; Run the actual monopoly game in a setTimeout to avoid blocking UI
-     (js/setTimeout 
+     (js/setTimeout
        (fn []
          (try
            (let [final-game-state (monopoly-core/rand-game-end-state player-count)
-                 winner-id (when (= 1 (->> (:players final-game-state) 
-                                           (filter #(= :playing (:status %))) 
+                 winner-id (when (= 1 (->> (:players final-game-state)
+                                           (filter #(= :playing (:status %)))
                                            count))
                              (->> (:players final-game-state)
                                   (filter #(= :playing (:status %)))
@@ -65,7 +67,7 @@
                                   :id))
                  transaction-count (count (:transactions final-game-state))
                  completion-log [(str "Game completed! Total transactions: " transaction-count)
-                                (if winner-id 
+                                (if winner-id
                                   (str "Winner: " winner-id)
                                   "Game ended without a clear winner")
                                 (if (:exception final-game-state)
@@ -81,7 +83,7 @@
              (re-frame/dispatch [::add-game-log-entry (str "Error running game: " (.-message e))])
              (re-frame/dispatch [::set-single-game-running false]))))
        100)
-     
+
      db)))
 
 (re-frame/reg-event-db
@@ -156,103 +158,58 @@
  (fn [db [_ games]]
    (assoc-in db [:bulk-simulation :config :games] games)))
 
-(re-frame/reg-event-db
+(re-frame/reg-event-fx
+ ::set-active-panel
+ (fn [{:keys [db]} [_ active-panel]]
+   {:db (assoc db :active-panel active-panel)}))
+
+(re-frame/reg-event-fx
  ::start-bulk-simulation
- (fn [db _]
+ (fn [{:keys [db]} _]
    (let [num-games (get-in db [:bulk-simulation :config :games] 100)
          players (get-in db [:game-setup :players])
-         player-count (if (and players (seq players)) 
-                        (count players) 
+         player-count (if (and players (seq players))
+                        (count players)
                         4)]
-     (-> db
-         (assoc-in [:bulk-simulation :running?] true)
-         (assoc-in [:bulk-simulation :progress] 0)
-         (assoc-in [:bulk-simulation :total-games] num-games)
-         (assoc-in [:bulk-simulation :results] nil))
-     
-     ;; Run bulk simulation in background
-     (js/setTimeout 
-       (fn []
-         (try
-           (let [start-time (js/Date.now)
-                 results (atom [])]
-             (letfn [(run-games [remaining]
-                       (when (> remaining 0)
-                         (let [game-result (monopoly-core/rand-game-end-state player-count)
-                               active-players (->> (:players game-result)
-                                                   (filter #(= :playing (:status %))))
-                               game-completed? (= :complete (:status game-result))
-                               winner-id (when (and game-completed? (= 1 (count active-players)))
-                                           (:id (first active-players)))
-                               ;; Debug logging
-                               _ (js/console.log "Game result status:" (:status game-result))
-                               _ (js/console.log "Active players count:" (count active-players))
-                               _ (js/console.log "Game completed?" game-completed?)
-                               _ (js/console.log "Has failsafe?" (:failsafe-stop game-result))
-                               _ (js/console.log "Has exception?" (:exception game-result))
-                               _ (js/console.log "Winner ID:" winner-id)
-                               game-summary {:has-winner (some? winner-id)
-                                             :winner-id winner-id
-                                             :transaction-count (count (:transactions game-result))
-                                             :exception? (boolean (:exception game-result))
-                                             :failsafe? (boolean (:failsafe-stop game-result))}]
-                           
-                           (swap! results conj game-summary)
-                           (re-frame/dispatch [::set-bulk-sim-progress (- num-games remaining -1)])
-                           
-                           ;; Continue with next game (small delay to prevent UI blocking)
-                           (js/setTimeout #(run-games (dec remaining)) 10))))]
-             
-               ;; Start running games
-               (run-games num-games))
-             
-             ;; When all games complete, calculate final statistics
-             (js/setTimeout 
-               (fn []
-                 (let [end-time (js/Date.now)
-                       duration-ms (- end-time start-time)
-                       duration-sec (/ duration-ms 1000.0)
-                       games-with-winner (->> @results (filter :has-winner))
-                       games-without-winner (->> @results (filter #(not (:has-winner %))))
-                       failsafe-games (->> @results (filter :failsafe?))
-                       winner-counts (->> games-with-winner
-                                          (group-by :winner-id)
-                                          (map (fn [[id games]] [id (count games)]))
-                                          (sort-by second >))
-                       tx-counts (->> @results (map :transaction-count))
-                       
-                       final-results {:total-games num-games
-                                      :duration-seconds duration-sec
-                                      :games-per-second (/ num-games duration-sec)
-                                      :games-with-winner (count games-with-winner)
-                                      :games-without-winner (count games-without-winner)
-                                      :failsafe-stops (count failsafe-games)
-                                      :winner-percentage (* 100.0 (/ (count games-with-winner) num-games))
-                                      :failsafe-percentage (* 100.0 (/ (count failsafe-games) num-games))
-                                      :winner-distribution winner-counts
-                                      :transaction-stats (when (seq tx-counts)
-                                                           {:min (apply min tx-counts)
-                                                            :max (apply max tx-counts)
-                                                            :avg (/ (apply + tx-counts) (count tx-counts))})
-                                      :games-with-auctions 0  ;; TODO: implement auction tracking
-                                      :auction-occurrence-rate 0.0
-                                      :total-auctions-initiated 0
-                                      :auction-completion-rate 0.0}]
-                   
-                   (re-frame/dispatch [::set-bulk-sim-results final-results])
-                   (re-frame/dispatch [::set-bulk-sim-running false])))
-               500))
-           (catch js/Error e
-             (re-frame/dispatch [::set-bulk-sim-running false])
-             (js/console.error "Error in bulk simulation:" e))))
-       100)
-     
-     db)))
+
+     {;; Reset the various status attributes
+      :db (-> db
+              (assoc-in [:bulk-simulation :start-time] (time/now))
+              (assoc-in [:bulk-simulation :running?] true)
+              (assoc-in [:bulk-simulation :progress] 0)
+              (assoc-in [:bulk-simulation :total-games] num-games)
+              (assoc-in [:bulk-simulation :results] []))
+      ;; Start up a bulk monopoly simulation run
+      :monopoly/simulation {:num-games num-games
+                            :num-players player-count}})))
 
 (re-frame/reg-event-db
  ::stop-bulk-simulation
  (fn [db _]
    (assoc-in db [:bulk-simulation :running?] false)))
+
+;; When bulk monopoly simulation is running, this gets fired every time
+;; a new game is complete and ready to update the analysis screen
+(re-frame/reg-event-db
+ ::bulk-sim-game-finished
+ (fn [db [_ game]]
+   (println "registering new game results in db...")
+   (let [start-time (get-in db [:bulk-simulation :start-time])
+         duration-ms (time/elapsed-ms start-time
+                                      (time/now))
+         total-games (get-in db [:bulk-simulation :total-games])
+         prev-results (get-in db [:bulk-simulation :results])
+         new-results (conj prev-results game)
+         new-stats (core-sim/calculate-statistics new-results
+                                                  total-games
+                                                  duration-ms)]
+
+     (-> db
+         ;; Recalc new bulk stats with this additional game
+         (assoc-in [:bulk-simulation :stats] new-stats)
+         ;; Keep that game's results
+         (assoc-in [:bulk-simulation :results] new-results)))))
+
 
 (re-frame/reg-event-db
  ::set-bulk-sim-progress

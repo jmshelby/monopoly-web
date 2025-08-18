@@ -56,6 +56,11 @@
    (get-in db [:bulk-simulation :results])))
 
 (re-frame/reg-sub
+ ::bulk-sim-stats
+ (fn [db _]
+   (get-in db [:bulk-simulation :stats])))
+
+(re-frame/reg-sub
  ::bulk-sim-config
  (fn [db _]
    (get-in db [:bulk-simulation :config])))

@@ -1,10 +1,11 @@
 (ns jmshelby.monopoly-web.views-simple
   (:require
+   [cljs.pprint :refer [pprint]]
    [re-frame.core :as re-frame]
+   [jmshelby.monopoly.simulation.output :as output]
    [jmshelby.monopoly-web.events :as events]
    [jmshelby.monopoly-web.routes :as routes]
    [jmshelby.monopoly-web.subs :as subs]
-   [jmshelby.monopoly-web.styles :as styles]
    [jmshelby.monopoly.analysis :as analysis]))
 
 ;; Simple HTML-based components without re-com
@@ -180,6 +181,7 @@
         progress (re-frame/subscribe [::subs/bulk-sim-progress])
         total-games (re-frame/subscribe [::subs/bulk-sim-total])
         results (re-frame/subscribe [::subs/bulk-sim-results])
+        stats (re-frame/subscribe [::subs/bulk-sim-stats])
         num-games (re-frame/subscribe [::subs/bulk-sim-config-games])]
     [:div {:style {:padding "2em"}}
      [:h1 "Bulk Game Simulation"]
@@ -187,19 +189,19 @@
       [:button {:style {:margin-right "1em"}
                 :on-click #(re-frame/dispatch [::events/navigate :setup])}
        "← Back to Setup"]
-      
+
       (when-not @running?
-        [:button {:style {:background-color "#28a745" :color "white" :border "none" 
+        [:button {:style {:background-color "#28a745" :color "white" :border "none"
                           :padding "0.5em 1em" :margin-left "1em"}
                   :on-click #(re-frame/dispatch [::events/start-bulk-simulation])}
          "Start Simulation"])
-      
+
       (when @running?
-        [:button {:style {:background-color "#dc3545" :color "white" :border "none" 
+        [:button {:style {:background-color "#dc3545" :color "white" :border "none"
                           :padding "0.5em 1em" :margin-left "1em"}
                   :on-click #(re-frame/dispatch [::events/stop-bulk-simulation])}
          "Stop Simulation"])]
-     
+
      ;; Configuration section
      (when-not @running?
        [:div {:class "code-block" :style {:margin-top "2em"}}
@@ -207,67 +209,38 @@
         [:div
          [:label "Number of games: "]
          [:select {:value (or @num-games 100)
-                   :on-change #(re-frame/dispatch [::events/set-bulk-sim-config-games 
+                   :on-change #(re-frame/dispatch [::events/set-bulk-sim-config-games
                                                    (js/parseInt (.. % -target -value))])}
           [:option {:value 50} "50"]
-          [:option {:value 100} "100"] 
+          [:option {:value 100} "100"]
           [:option {:value 500} "500"]
           [:option {:value 1000} "1000"]
           [:option {:value 2000} "2000"]]]])
-     
+
      ;; Progress section
      (when @running?
        [:div {:style {:margin-top "2em"}}
         [:h3 "Simulation Progress"]
         [:div {:style {:background-color "#e9ecef" :height "20px" :border-radius "10px" :overflow "hidden"}}
-         [:div {:style {:background-color "#007bff" 
-                        :height "100%" 
+         [:div {:style {:background-color "#007bff"
+                        :height "100%"
                         :width (str (if (and @progress @total-games (> @total-games 0))
                                       (* 100 (/ @progress @total-games))
                                       0) "%")
                         :transition "width 0.3s ease"}}]]
         [:p (str "Completed " (or @progress 0) " / " (or @total-games 0) " games")]])
-     
+
      ;; Results section
-     (when @results
+     (when @stats
        [:div {:style {:margin-top "2em"}}
         [:h3 "Simulation Results"]
         [:div {:class "code-block" :style {:font-size "12px"}}
-         [:div {:style {:margin-bottom "1em"}}
-          [:strong "🚀 PERFORMANCE"] [:br]
-          (str "   Total Games: " (:total-games @results)) [:br]
-          (str "   Duration: " (.toFixed (:duration-seconds @results) 1) " seconds") [:br]
-          (str "   Speed: " (.toFixed (:games-per-second @results) 1) " games/second") [:br]]
-         
-         [:div {:style {:margin-bottom "1em"}}
-          [:strong "🎯 GAME COMPLETION"] [:br]
-          (str "   Games with Winner: " (:games-with-winner @results) 
-               " (" (.toFixed (:winner-percentage @results) 1) "%)") [:br]
-          (str "   Games without Winner: " (:games-without-winner @results) 
-               " (" (.toFixed (- 100 (:winner-percentage @results)) 1) "%)") [:br]
-          (when (:failsafe-stops @results)
-            (str "   Failsafe Stops: " (:failsafe-stops @results) 
-                 " (" (.toFixed (:failsafe-percentage @results) 1) "%)")) [:br]]
-         
-         (when (:winner-distribution @results)
-           [:div {:style {:margin-bottom "1em"}}
-            [:strong "🏆 WINNER DISTRIBUTION"] [:br]
-            (for [[player-id wins] (:winner-distribution @results)]
-              [:div {:key player-id} 
-               (str "   Player " player-id ": " wins " wins (" 
-                    (.toFixed (* 100 (/ wins (:games-with-winner @results))) 1) "%)") [:br]])])
-         
-         (when (:transaction-stats @results)
-           [:div {:style {:margin-bottom "1em"}}
-            [:strong "📊 TRANSACTION STATISTICS"] [:br]
-            (str "   Average: " (.toFixed (:avg (:transaction-stats @results)) 1) " transactions") [:br]
-            (str "   Min: " (:min (:transaction-stats @results)) ", Max: " (:max (:transaction-stats @results))) [:br]])
-         
-         ;; TODO: Add auction statistics when implemented
-         ]])
-         ]
-         )
-)
+
+         (with-out-str
+           (output/print-simulation-results @stats))
+
+         ;
+         ]])]))
 
 ;; Panel routing for simple components
 (defmethod routes/panels :battle-opoly-panel [] [simple-battle-opoly-panel])
