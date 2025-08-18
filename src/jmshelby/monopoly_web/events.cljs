@@ -188,27 +188,38 @@
  (fn [db _]
    (assoc-in db [:bulk-simulation :running?] false)))
 
+(re-frame/reg-event-db
+ ::bulk-sim-started
+ (fn [db [_ output-ch]]
+   (assoc-in db [:bulk-simulation :output-chan] output-ch)))
+
 ;; When bulk monopoly simulation is running, this gets fired every time
 ;; a new game is complete and ready to update the analysis screen
-(re-frame/reg-event-db
+(re-frame/reg-event-fx
  ::bulk-sim-game-finished
- (fn [db [_ game]]
+ (fn [{:keys [db]} [_ game]]
    (println "registering new game results in db...")
    (let [start-time (get-in db [:bulk-simulation :start-time])
          duration-ms (time/elapsed-ms start-time
                                       (time/now))
+         output-ch (get-in db [:bulk-simulation :output-chan])
          total-games (get-in db [:bulk-simulation :total-games])
          prev-results (get-in db [:bulk-simulation :results])
          new-results (conj prev-results game)
          new-stats (core-sim/calculate-statistics new-results
                                                   total-games
-                                                  duration-ms)]
+                                                  duration-ms)
+         more-games? (not= total-games (count new-results))]
 
-     (-> db
-         ;; Recalc new bulk stats with this additional game
-         (assoc-in [:bulk-simulation :stats] new-stats)
-         ;; Keep that game's results
-         (assoc-in [:bulk-simulation :results] new-results)))))
+     (merge
+      {:db (-> db
+              ;; Recalc new bulk stats with this additional game
+               (assoc-in [:bulk-simulation :stats] new-stats)
+              ;; Keep that game's results
+               (assoc-in [:bulk-simulation :results] new-results))}
+      ;; If there are more games needed, we need to invoke an fx for that
+      (when more-games?
+        [:monopoly/simulation-continue output-ch])))))
 
 
 (re-frame/reg-event-db
