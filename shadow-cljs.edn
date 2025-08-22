@@ -24,4 +24,14 @@
    {:compiler-options
     {:closure-defines
      { 
-      re-com.config/root-url-for-compiler-output "http://localhost:8290/js/compiled/app/cljs-runtime/"}}}}}}
+      re-com.config/root-url-for-compiler-output "http://localhost:8290/js/compiled/app/cljs-runtime/"}}}}
+
+  :worker
+  {:target     :browser
+   :output-dir "resources/public/js/worker"
+   :asset-path "/js/worker"
+   :modules
+   {:worker {:init-fn jmshelby.monopoly-web.worker/init}}
+   :compiler-options
+   {:warnings {:redef false}
+    :optimizations :simple}}}}
