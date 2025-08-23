@@ -20,10 +20,10 @@
             results (run-bulk-simulation config num-sims)]
         (js/postMessage (clj->js {:type "simulation-complete"
                                   :results results})))
-      
+
       "ping"
       (js/postMessage (clj->js {:type "pong"}))
-      
+
       (js/console.warn "Unknown message type:" message-type))))
 
 (js/addEventListener "message" handle-message)
