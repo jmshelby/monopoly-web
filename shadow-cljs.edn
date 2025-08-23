@@ -14,12 +14,7 @@
    :output-dir "resources/public/js/compiled"
    :asset-path "/js/compiled"
    :modules
-   {:shared {:entries []}
-    :app {:init-fn jmshelby.monopoly-web.core/init
-          :depends-on #{:shared}}
-    :worker {:init-fn jmshelby.monopoly-web.worker/init
-             :depends-on #{:shared}
-             :web-worker true}}
+   {:app {:init-fn jmshelby.monopoly-web.core/init}}
    :compiler-options
    {:warnings {:redef false}}
    :devtools
@@ -29,4 +24,13 @@
    {:compiler-options
     {:closure-defines
      { 
-      re-com.config/root-url-for-compiler-output "http://localhost:8290/js/compiled/app/cljs-runtime/"}}}}}}
+      re-com.config/root-url-for-compiler-output "http://localhost:8290/js/compiled/app/cljs-runtime/"}}}}
+
+  :worker
+  {:target     :browser
+   :output-dir "resources/public/js/compiled"
+   :asset-path "/js/compiled"
+   :modules
+   {:worker {:init-fn jmshelby.monopoly-web.worker/init}}
+   :compiler-options
+   {:warnings {:redef false}}}}}
