@@ -14,7 +14,7 @@ pom.xml.asc
 .cpcache/
 
 # Shadow-cljs build artifacts
-/resources/public/js/compiled/
+/resources/public/js/
 /.shadow-cljs/
 .shadow-cljs/
 
