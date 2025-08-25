@@ -4,12 +4,12 @@
    [re-frame.core :as re-frame]
    [clojure.core.async :as async]
    [servant.core :as servant]
+   [servant.worker :as worker]
    [jmshelby.monopoly-web.events :as events]
    [jmshelby.monopoly-web.routes :as routes]
    [jmshelby.monopoly-web.views-simple :as views]
    [jmshelby.monopoly-web.config :as config]
-   [jmshelby.monopoly-web.styles :as styles]
-   [jmshelby.monopoly-web.worker.simulations :as sim-worker]))
+   [jmshelby.monopoly-web.styles :as styles]))
 
 (def WORKER-COUNT 4)
 (def WORKER-SCRIPT "/js/compiled/worker-simulations.js") ;; This is whatever the name of this script will be
@@ -29,6 +29,9 @@
     (rdom/unmount-component-at-node root-el)
     (rdom/render [views/simple-main-panel] root-el)))
 
+(defn servant-thread [servant-channel post-message-fn f-key & args]
+  (apply servant/servant-thread-with-key servant-channel post-message-fn f-key args))
+
 ;;Trying to replicate this for web workers
 ;;(async/pipeline parallelism output-ch (map process-game) input-ch)
 (defn- worker-pipeline
@@ -41,9 +44,10 @@
     ;; Pull from input...
     ;; TODO - close out channel when in chan closed?
     (when-let [in (async/<! input-ch)]
+
       ;; Submit job to next available worker
       (let [worker-resp-ch
-            (servant/servant-thread
+            (servant-thread
              worker-ch
              servant/standard-message
              worker-fn
@@ -75,7 +79,7 @@
      ;; Start pipeline to run sims in web workers
      (worker-pipeline worker-channel
                       output-ch
-                      sim-worker/run-game
+                      :run-game
                       input-ch)
 
      ;; Start feeding game sim params to input channel
@@ -88,11 +92,13 @@
      ;; Start feeding game results to event
      (async/go-loop []
        (when-let [game (async/<! output-ch)]
-         (println "new game ready, dispatching ...")
-         (re-frame/dispatch [:jmshelby.monopoly-web.events/bulk-sim-game-finished
-                             game])
-         (println "new game ready, dispatching ...continuing")))
-
+         ;; Convert back to clj types
+         (let [game (js->clj game :keywordize-keys true)]
+           (println "new game ready, dispatching ...")
+           (re-frame/dispatch [:jmshelby.monopoly-web.events/bulk-sim-game-finished
+                               game])
+           (println "new game ready, dispatching ...continuing")
+           (recur))))
 
 ;;
      )))
