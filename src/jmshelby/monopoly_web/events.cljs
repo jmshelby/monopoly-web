@@ -204,26 +204,27 @@
 (re-frame/reg-event-fx
  ::bulk-sim-game-finished
  (fn [{:keys [db]} [_ game]]
-   (let [start-time (get-in db [:bulk-simulation :start-time])
-           duration-ms (time/elapsed-ms start-time (time/now))
-           total-games (get-in db [:bulk-simulation :total-games])
-           prev-results (get-in db [:bulk-simulation :results])
-           new-results (conj prev-results game)
-           _ (println "BULKSIM: calculating stats..." (:transaction-count game))
-           new-stats (core-sim/calculate-statistics new-results
-                                                    (count new-results)
-                                                    duration-ms)
-           _ (println "BULKSIM: calculating stats...Done")
-           more-games? (not= total-games (count new-results))]
-       (println "BULKSIM: return new DB")
-       {:db (-> db
+   (let [game-num (:game-num game)
+         start-time (get-in db [:bulk-simulation :start-time])
+         duration-ms (time/elapsed-ms start-time (time/now))
+         total-games (get-in db [:bulk-simulation :total-games])
+         prev-results (get-in db [:bulk-simulation :results])
+         new-results (conj prev-results game)
+         _ (println "BULKSIM: " game-num " calculating stats..." (:transaction-count game))
+         new-stats (core-sim/calculate-statistics new-results
+                                                  (count new-results)
+                                                  duration-ms)
+         _ (println "BULKSIM: " game-num " calculating stats...Done")
+         more-games? (not= total-games (count new-results))]
+     (println "BULKSIM: " game-num " return new DB")
+     {:db (-> db
               ;; Recalc new bulk stats with this additional game
-                (assoc-in [:bulk-simulation :stats] new-stats)
+              (assoc-in [:bulk-simulation :stats] new-stats)
               ;; Keep that game's results
-                (assoc-in [:bulk-simulation :results] new-results)
+              (assoc-in [:bulk-simulation :results] new-results)
               ;; Update progress counter
-                (assoc-in [:bulk-simulation :progress] (count new-results))
-                (assoc-in [:bulk-simulation :running?] more-games?))})))
+              (assoc-in [:bulk-simulation :progress] (count new-results))
+              (assoc-in [:bulk-simulation :running?] more-games?))})))
 
 (re-frame/reg-event-db
  ::set-bulk-sim-progress

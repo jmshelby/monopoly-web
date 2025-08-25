@@ -11,7 +11,7 @@
    [jmshelby.monopoly-web.config :as config]
    [jmshelby.monopoly-web.styles :as styles]))
 
-(def WORKER-COUNT 4)
+(def WORKER-COUNT 1)
 (def WORKER-SCRIPT "/js/compiled/worker-simulations.js") ;; This is whatever the name of this script will be
 
 ;; Start Up Workers
@@ -44,7 +44,7 @@
     ;; Pull from input...
     ;; TODO - close out channel when in chan closed?
     (when-let [in (async/<! input-ch)]
-
+      (println "PIPE: ("  (:game-num in) ") new game available")
       ;; Submit job to next available worker
       (let [worker-resp-ch
             (servant-thread
@@ -52,12 +52,18 @@
              servant/standard-message
              worker-fn
              in)]
+        (println "PIPE: ("  (:game-num in) ") sent to worker")
         ;; Setup a background proc to wait on response,
         ;; and feed on to the output channel when ready.
         (async/go
-           (let [worker-resp (async/<! worker-resp-ch)]
-             (async/>! output-ch
-                       worker-resp)))
+          (let [worker-resp (async/<! worker-resp-ch)]
+            (println "PIPE: ("
+                     (:game-num in)
+                     ") worker response ready, resp game #:"
+                     (:game-num (js->clj worker-resp
+                                         :keywordize-keys true)))
+            (async/>! output-ch
+                      worker-resp)))
         ;; Keep going...
         (recur)))))
 
@@ -65,6 +71,9 @@
 (re-frame/reg-fx
  :monopoly/simulation
  (fn [{:keys [num-games num-players safety-threshold]}]
+
+   (println "FX: SIMULATION START")
+
    (let [num-players (or num-players 4)
          safety-threshold (or safety-threshold 1000)
          ;; Create channels
@@ -85,19 +94,23 @@
      ;; Start feeding game sim params to input channel
      (async/go
        (doseq [game-num (range num-games)]
+         (println "FX: Feeding game in: " game-num "...")
          (async/>! input-ch {:game-num game-num
                              :num-players num-players
-                             :safety-threshold safety-threshold})))
+                             :safety-threshold safety-threshold})
 
-     ;; Start feeding game results to event
+         (println "FX: Feeding game in: " game-num "...DONE")
+         ))
+
+;; Start feeding game results to event
      (async/go-loop []
        (when-let [game (async/<! output-ch)]
          ;; Convert back to clj types
          (let [game (js->clj game :keywordize-keys true)]
-           (println "new game ready, dispatching ...")
+           (println "FX (" (:game-num game) ") new game ready, dispatching ...")
            (re-frame/dispatch [:jmshelby.monopoly-web.events/bulk-sim-game-finished
                                game])
-           (println "new game ready, dispatching ...continuing")
+           (println "FX (" (:game-num game) ") new game ready, dispatching ...continuing")
            (recur))))
 
 ;;

@@ -24,7 +24,7 @@
     (println "WORKER: " game-num " ran game")
     ;; Need to return as a javascript object
     ;; TODO - too bad this isn't abstracted for us...
-    (clj->js analysis)))
+    (clj->js (assoc analysis :game-num game-num))))
 
 ;; TODO - check if we're in a web worker?
 (worker/bootstrap)
