@@ -216,20 +216,14 @@
                                                   (count new-results)
                                                   duration-ms)
          more-games? (not= total-games (count new-results))]
-
-     (merge
-      {:db (-> db
+     {:db (-> db
               ;; Recalc new bulk stats with this additional game
-               (assoc-in [:bulk-simulation :stats] new-stats)
+              (assoc-in [:bulk-simulation :stats] new-stats)
               ;; Keep that game's results
-               (assoc-in [:bulk-simulation :results] new-results)
+              (assoc-in [:bulk-simulation :results] new-results)
               ;; Update progress counter
-               (assoc-in [:bulk-simulation :progress] (count new-results))
-               (assoc-in [:bulk-simulation :running?] more-games?))}
-      ;; If there are more games needed, we need to invoke an fx for that
-      (when more-games?
-        [:monopoly/simulation-continue output-ch])))))
-
+              (assoc-in [:bulk-simulation :progress] (count new-results))
+              (assoc-in [:bulk-simulation :running?] more-games?))})))
 
 (re-frame/reg-event-db
  ::set-bulk-sim-progress
