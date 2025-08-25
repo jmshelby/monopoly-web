@@ -102,7 +102,7 @@
          (println "FX: Feeding game in: " game-num "...DONE")
          ))
 
-;; Start feeding game results to event
+     ;; Start feeding game results to event
      (async/go-loop []
        (when-let [game (async/<! output-ch)]
          ;; Convert back to clj types
