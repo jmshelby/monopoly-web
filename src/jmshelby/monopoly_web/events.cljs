@@ -12,6 +12,11 @@
  (fn [_ _]
    db/default-db))
 
+(re-frame/reg-event-db
+ ::initialize-workers
+ (fn [db [_ chan]]
+      (assoc db :servant-worker-channel chan)))
+
 (re-frame/reg-event-fx
   ::navigate
   (fn [_ [_ handler]]
@@ -33,7 +38,7 @@
  (fn [db [_ players]]
    (assoc-in db [:game-setup :players] players)))
 
-;; Single game events 
+;; Single game events
 (re-frame/reg-event-db
  ::set-single-game-state
  (fn [db [_ game-state]]
