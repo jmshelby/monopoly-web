@@ -13,15 +13,15 @@
   {:target     :browser
    :output-dir "resources/public/js/compiled"
    :asset-path "/js/compiled"
-   :modules
-   {:app {:init-fn jmshelby.monopoly-web.core/init}}
-   :compiler-options
-   {:warnings {:redef false}}
-   :devtools
-   {:preloads [
-               re-frisk.preload]}
-   :dev
-   {:compiler-options
-    {:closure-defines
-     { 
-      re-com.config/root-url-for-compiler-output "http://localhost:8290/js/compiled/app/cljs-runtime/"}}}}}}
+   :modules {:shared {:entries []}
+             :app {:init-fn jmshelby.monopoly-web.core/init
+                   :depends-on #{:shared}}
+             :worker-simulations
+             {:init-fn jmshelby.monopoly-web.worker.simulations/init
+              :depends-on #{:shared}
+              :web-worker true}}}}
+   :compiler-options {:warnings {:redef false}}
+   :devtools {:preloads [re-frisk.preload]}
+   :dev {:compiler-options
+         {:closure-defines
+          {re-com.config/root-url-for-compiler-output "http://localhost:8290/js/compiled/app/cljs-runtime/"}}}}}}

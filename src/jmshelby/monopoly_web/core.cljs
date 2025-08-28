@@ -7,8 +7,10 @@
    [jmshelby.monopoly-web.routes :as routes]
    [jmshelby.monopoly-web.views-simple :as views]
    [jmshelby.monopoly-web.config :as config]
-   [jmshelby.monopoly-web.styles :as styles]
-   [jmshelby.monopoly.simulation :as core-sim]))
+   [jmshelby.monopoly-web.styles :as styles]))
+
+(def WORKER-COUNT 2)
+(def WORKER-SCRIPT "/js/compiled/worker-simulations.js") ;; This is whatever the name of this script will be
 
 (defn dev-setup []
   (when config/debug?
@@ -33,12 +35,20 @@
 (re-frame/reg-fx
  :monopoly/simulation
  (fn [{:keys [num-games num-players safety-threshold]}]
-   (let [num-players (or num-players 4)
-         safety-threshold (or safety-threshold 1000)
-         output-ch (core-sim/run-simulation num-games
-                                            num-players
-                                            safety-threshold)]
-     ;; Dispatch to save the channel
+   (let [
+         num-players (or num-players 4)
+         safety-threshold (or safety-threshold 1000)]
+
+     ;; Start feeding game numbers to input channel
+     (async/go
+       (doseq [game-num (range num-games)]
+
+         (let [])
+
+         (async/>! input-ch game-num))
+       (async/close! input-ch))
+
+;; Dispatch to save the channel
      (re-frame/dispatch [:jmshelby.monopoly-web.events/bulk-sim-started
                          output-ch])
      ;; Prime the compute cycle with the first game
@@ -64,6 +74,13 @@
     (println "Routes started")
     (re-frame/dispatch-sync [::events/initialize-db])
     (println "Database initialized")
+
+    ;; Start Up Workers
+    (println "Starting workers: " WORKER-COUNT WORKER-SCRIPT)
+    (let [serv-chan (servant/spawn-servants WORKER-COUNT WORKER-SCRIPT)]
+      (re-frame/dispatch-sync [::events/initialize-workers serv-chan])
+      (println "Starting workers...Done"))
+
     (dev-setup)
     (println "Dev setup complete")
     (mount-root)

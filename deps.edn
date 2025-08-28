@@ -1,13 +1,12 @@
 {:paths ["src" "test"]
 
- :deps {org.clojure/clojure {:mvn/version "1.11.1"}
+ :deps {;; Core Libraries
+        org.clojure/clojure {:mvn/version "1.11.1"}
+        org.clojure/core.async {:mvn/version "1.6.681"}
+        org.clojure/core.memoize {:mvn/version "1.1.266"}
 
         ;; Build Tool
         thheller/shadow-cljs {:mvn/version "2.25.8"}
-
-        ;; Game Logic
-        jmshelby/monopoly {:git/url "https://github.com/jmshelby/monopoly.git"
-                           :git/sha "145bcde91bc2583ea761b9f512865fac97e0866d"}
 
         ;; UI Libraries
         reagent/reagent {:mvn/version "1.1.1"}
@@ -22,13 +21,14 @@
         garden/garden {:mvn/version "1.3.10"}
         net.dhleong/spade {:mvn/version "1.1.0"}
 
+        ;; Game Logic
+        jmshelby/monopoly {:git/url "https://github.com/jmshelby/monopoly.git"
+                           :git/sha "145bcde91bc2583ea761b9f512865fac97e0866d"}
+
         ;; Development Tools
+        ;; TODO - Should these be in a dev alias?
         binaryage/devtools {:mvn/version "1.0.6"}
         re-frisk/re-frisk {:mvn/version "1.6.0"}
-        cider/cider-nrepl {:mvn/version "0.44.0"}
-
-        ;; Core Libraries
-        org.clojure/core.async {:mvn/version "1.6.681"}
-        org.clojure/core.memoize {:mvn/version "1.1.266"}}
+        cider/cider-nrepl {:mvn/version "0.44.0"}}
 
  :aliases {}}
