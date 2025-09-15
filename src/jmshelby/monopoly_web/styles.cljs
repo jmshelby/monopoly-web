@@ -91,6 +91,14 @@
     {:background-color "#ff3333"
      :border-color     "#ff3333"}]]
 
+  [:.btn-info
+   {:background-color "#0099cc"
+    :border-color     "#0099cc"
+    :color            "#ffffff"}
+   [:&:hover
+    {:background-color "#00ccff"
+     :border-color     "#00ccff"}]]
+
   [:input :select
    {:background-color "transparent"
     :border "1px solid #666666"
@@ -116,7 +124,64 @@
 
   [:.highlight
    {:color "#ffff66"
-    :background-color "transparent"}])
+    :background-color "transparent"}]
+
+  ;; Player Lab Styles
+  [:.player-lab-container
+   {:display "flex"
+    :height "100vh"}]
+
+  [:.player-lab-left-panel
+   {:width "50%"
+    :border-right "1px solid #333340"
+    :display "flex"
+    :flex-direction "column"}]
+
+  [:.player-lab-header
+   {:padding "1em"
+    :border-bottom "1px solid #333340"
+    :background-color "#10101a"}
+   [:h3
+    {:margin "0 0 1em 0"}]]
+
+  [:.player-lab-buttons
+   {:display "flex"
+    :gap "1em"}]
+
+  [:.player-lab-editor-area
+   {:flex "1"
+    :padding "1em"}
+   [:h4
+    {:margin-bottom "0.5em"}]]
+
+  [:.player-lab-textarea
+   {:width "100%"
+    :height "400px"
+    :font-family "\"Courier New\", \"Monaco\", \"Consolas\", monospace"
+    :font-size "14px"
+    :border "1px solid #333340"
+    :padding "1em"
+    :background-color "#10101a"
+    :color "#cccccc"
+    :resize "none"}
+   [:&:focus
+    {:border-color "#009900"
+     :outline "none"
+     :box-shadow "0 0 3px #009900"}]]
+
+  [:.player-lab-right-panel
+   {:width "50%"
+    :padding "2em"
+    :background-color "#0a0a18"}]
+
+  [:.player-lab-placeholder
+   {:border "2px dashed #333340"
+    :padding "2em"
+    :text-align "center"
+    :margin-top "2em"
+    :color "#666666"}
+   [:p
+    {:margin "0.5em 0"}]])
 
 (defclass level1
   []
