@@ -254,8 +254,8 @@
      [:h3 "Player Logic Editor"]
      [:div.player-lab-buttons
       [:button.btn-secondary
-       {:on-click #(re-frame/dispatch [::events/navigate :setup])}
-       "← Back to Setup"]
+       {:on-click #(re-frame/dispatch [::events/navigate :battle-opoly])}
+       "← Back"]
       [:button.btn-success
        "Run Simulation"]]]
     
