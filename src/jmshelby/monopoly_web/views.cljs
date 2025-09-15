@@ -20,7 +20,7 @@
                :label "Monopolyistics"
                :level :level1
                :style {:font-size "3em" :margin-bottom "1em"}]
-              
+
               [re-com/v-box
                :src      (at)
                :gap      "1em"
@@ -35,7 +35,7 @@
                                        (re-frame/dispatch [::events/navigate :setup])
                                        (catch js/Error e
                                          (js/console.log "Error in single game click:" e)))]
-                          
+
                           [re-com/button
                            :src      (at)
                            :label    "Run lots of games w/stats"
@@ -57,11 +57,11 @@
      :children [[re-com/label
                  :src   (at)
                  :label (str "Player " (inc idx))]
-                
+
                 [re-com/single-dropdown
                  :src              (at)
                  :choices          [{:id :dumb-v1 :label "Dumb v1"}
-                                    {:id :dumb-v2 :label "Dumb v2"} 
+                                    {:id :dumb-v2 :label "Dumb v2"}
                                     {:id :future-player :label "Future Player v"}]
                  :model            (:type player :dumb-v1)
                  :width            "150px"
@@ -78,7 +78,7 @@
                  :src   (at)
                  :label (if (= @mode :single) "Single or Bulk?" "Setup Game")
                  :level :level1]
-                
+
                 [re-com/h-box
                  :src      (at)
                  :gap      "2em"
@@ -89,22 +89,22 @@
                                          :src   (at)
                                          :label "Players"
                                          :level :level3]
-                                        
+
                                         [re-com/v-box
                                          :src      (at)
                                          :gap      "0.5em"
-                                         :children (map-indexed player-config-row 
-                                                               (or @players 
-                                                                   [{:type :dumb-v1} {:type :dumb-v2} 
-                                                                    {:type :dumb-v1} {:type :future-player}]))]
-                                        
+                                         :children (map-indexed player-config-row
+                                                               (or @players
+                                                                   [{:type :dumb-v1} {:type :dumb-v1}
+                                                                    {:type :dumb-v1} {:type :dumb-v1}]))]
+
                                         [re-com/button
                                          :src      (at)
                                          :label    "+ Add Player"
                                          :style    {:margin-top "1em"}
-                                         :on-click #(re-frame/dispatch [::events/update-players 
+                                         :on-click #(re-frame/dispatch [::events/update-players
                                                                         (conj (or @players []) {:type :dumb-v1})])]]]
-                            
+
                             (when (= @mode :bulk)
                               [re-com/v-box
                                :src      (at)
@@ -113,7 +113,7 @@
                                            :src   (at)
                                            :label "Bulk Simulation Options"
                                            :level :level3]
-                                          
+
                                           [re-com/h-box
                                            :src      (at)
                                            :gap      "1em"
@@ -126,7 +126,7 @@
                                                        :model        "1000"
                                                        :width        "100px"
                                                        :on-change    #()]]]]])]]
-                
+
                 [re-com/h-box
                  :src      (at)
                  :gap      "1em"
@@ -134,13 +134,13 @@
                              :src      (at)
                              :label    "← Back"
                              :on-click #(re-frame/dispatch [::events/navigate :battle-opoly])]
-                            
+
                             [re-com/button
                              :src      (at)
                              :label    (if (= @mode :single) "Play!" "Run Simulation!")
                              :class    "btn-primary"
-                             :on-click #(re-frame/dispatch [::events/navigate 
-                                                            (if (= @mode :single) 
+                             :on-click #(re-frame/dispatch [::events/navigate
+                                                            (if (= @mode :single)
                                                               :single-game
                                                               :bulk-simulation)])]]]]]))
 
@@ -153,7 +153,7 @@
                :src   (at)
                :label "Game Summary"
                :level :level3]
-              
+
               [re-com/v-box
                :src      (at)
                :gap      "0.5em"
@@ -161,7 +161,7 @@
                :children (if game-state
                            [[re-com/label :src (at) :label (str "Status: " (:status game-state))]
                             [re-com/label :src (at) :label (str "Turn: " (count (:transactions game-state)))]
-                            [re-com/label :src (at) :label (str "Active Players: " 
+                            [re-com/label :src (at) :label (str "Active Players: "
                                                                  (->> (:players game-state)
                                                                       (filter #(= :playing (:status %)))
                                                                       count))]]
@@ -176,7 +176,7 @@
                  :src   (at)
                  :label "Turn by Turn Narrative"
                  :level :level3]
-                
+
                 [re-com/v-box
                  :src      (at)
                  :style    {:background-color "#f0f0f0" :padding "1em" :height "200px" :overflow "auto"}
@@ -198,7 +198,7 @@
                  :src   (at)
                  :label "Transaction Log w/text"
                  :level :level3]
-                
+
                 [re-com/v-box
                  :src      (at)
                  :style    {:background-color "#f8f8f8" :padding "1em" :height "300px" :overflow "auto"}
@@ -207,7 +207,7 @@
                                            [re-com/label
                                             :src (at)
                                             :key idx
-                                            :label (str (inc idx) ". " (:type tx) " - " 
+                                            :label (str (inc idx) ". " (:type tx) " - "
                                                        (case (:type tx)
                                                          :roll (str "Player " (:player tx) " rolled " (:roll tx))
                                                          (str tx)))])
@@ -228,7 +228,7 @@
                              :src   (at)
                              :label "Single Game Play"
                              :level :level1]
-                            
+
                             [re-com/h-box
                              :src      (at)
                              :gap      "1em"
@@ -236,15 +236,15 @@
                                          :src      (at)
                                          :label    "← Back to Setup"
                                          :on-click #(re-frame/dispatch [::events/navigate :setup])]
-                                        
+
                                         [re-com/button
                                          :src      (at)
                                          :label    (if @running? "Stop Game" "Start Game")
                                          :class    (if @running? "btn-danger" "btn-success")
-                                         :on-click #(re-frame/dispatch (if @running? 
+                                         :on-click #(re-frame/dispatch (if @running?
                                                                         [::events/stop-single-game]
                                                                         [::events/start-single-game]))]
-                                        
+
                                         (when @running?
                                           [re-com/button
                                            :src      (at)
@@ -252,16 +252,16 @@
                                            :class    "btn-primary"
                                            :style    {:margin-left "10px"}
                                            :on-click #(re-frame/dispatch [::events/simulate-dice-roll])])]]]]
-                
+
                 [re-com/h-box
                  :src      (at)
                  :gap      "2em"
                  :children [[game-summary-panel @game-state]
                             [turn-narrative-panel]]]
-                
+
                 [transaction-log-panel]]]))
 
-;; Bulk Simulation Interface  
+;; Bulk Simulation Interface
 (defn simulation-progress-panel []
   (let [running? (re-frame/subscribe [::subs/bulk-sim-running?])
         progress (re-frame/subscribe [::subs/bulk-sim-progress])
@@ -273,7 +273,7 @@
                  :src   (at)
                  :label "Simulation Progress"
                  :level :level3]
-                
+
                 (if @running?
                   [re-com/progress-bar
                    :src        (at)
@@ -290,7 +290,7 @@
                  :src   (at)
                  :label "Simulation Results"
                  :level :level3]
-                
+
                 [re-com/v-box
                  :src      (at)
                  :style    {:background-color "#f5f5f5" :padding "1em" :height "400px" :overflow "auto"}
@@ -314,7 +314,7 @@
                              :src   (at)
                              :label "Bulk Game Simulation"
                              :level :level1]
-                            
+
                             [re-com/h-box
                              :src      (at)
                              :gap      "1em"
@@ -322,13 +322,14 @@
                                          :src      (at)
                                          :label    "← Back to Setup"
                                          :on-click #(re-frame/dispatch [::events/navigate :setup])]
-                                        
+
                                         [re-com/button
                                          :src      (at)
                                          :label    (if @running? "Stop Simulation" "Start Simulation")
                                          :class    (if @running? "btn-danger" "btn-success")
-                                         :on-click #(re-frame/dispatch [::events/set-bulk-sim-running (not @running?)])]]]]]
-                
+                                         :on-click #(re-frame/dispatch [::events/set-bulk-sim-running
+                                                                        (not @running?)])]]]]]
+
                 [simulation-progress-panel]
                 [simulation-results-panel]]]))
 
