@@ -33,17 +33,17 @@
      [:div
       [:h3 "Players"]
       [:p "Player 1: Dumb v1"]
-      [:p "Player 2: Dumb v2"] 
+      [:p "Player 2: Dumb v1"]
       [:p "Player 3: Dumb v1"]
-      [:p "Player 4: Future Player v"]]
+      [:p "Player 4: Dumb v1"]]
      [:div
       [:button {:class "btn-secondary"
                 :style {:margin-right "1em"}
                 :on-click #(re-frame/dispatch [::events/navigate :battle-opoly])}
        "← Back"]
       [:button {:class "btn-success"
-                :on-click #(re-frame/dispatch [::events/navigate 
-                                              (if (= @mode :single) 
+                :on-click #(re-frame/dispatch [::events/navigate
+                                              (if (= @mode :single)
                                                 :single-game
                                                 :bulk-simulation)])}
        (if (= @mode :single) "Play!" "Run Simulation!")]]]))
@@ -60,16 +60,16 @@
        "← Back to Setup"]
       [:button {:style {:background-color (if @running? "#dc3545" "#28a745")
                         :color "white" :border "none" :padding "0.5em 1em"}
-                :on-click #(re-frame/dispatch (if @running? 
+                :on-click #(re-frame/dispatch (if @running?
                                               [::events/stop-single-game]
                                               [::events/start-single-game]))}
        (if @running? "Stop Game" "Play Game")]
       (when @running?
-        [:button {:style {:background-color "#007bff" :color "white" :border "none" 
+        [:button {:style {:background-color "#007bff" :color "white" :border "none"
                           :padding "0.5em 1em" :margin-left "1em"}
                   :on-click #(re-frame/dispatch [::events/simulate-dice-roll])}
          "Roll Dice"])]
-     
+
      [:div {:style {:margin-top "2em"}}
       [:h3 "Game Summary"]
       [:div {:class "code-block" :style {:min-height "200px" :font-size "12px"}}
@@ -82,7 +82,7 @@
                tx-by-type (frequencies (map :type transactions))
                total-cash (apply + (map :cash players))
                total-properties (apply + (map #(count (:properties %)) players))
-               
+
                ;; Calculate bank flows
                money-to-bank (->> transactions
                                   (filter #(= (:to %) :bank))
@@ -93,12 +93,12 @@
                                     (map :amount)
                                     (apply + 0))
                net-bank-flow (- money-to-bank money-from-bank)
-               
+
                ;; Auction stats
                auction-initiated (->> transactions (filter #(= :auction-initiated (:type %))) count)
                auction-completed (->> transactions (filter #(= :auction-completed (:type %))) count)
                auction-passed (->> transactions (filter #(= :auction-passed (:type %))) count)]
-           
+
            [:div
             ;; Game Overview
             [:div {:style {:margin-bottom "1em"}}
@@ -107,13 +107,13 @@
              (when winner
                (str "   🏆 Winner: Player " (:id winner))) [:br]
              (str "   Total Transactions: " (count transactions)) [:br]]
-            
+
             ;; Players
             [:div {:style {:margin-bottom "1em"}}
              [:strong "👥 PLAYERS"] [:br]
-             (str "   Total: " (count players) " (Active: " (count active-players) 
+             (str "   Total: " (count players) " (Active: " (count active-players)
                   ", Bankrupt: " (count bankrupt-players) ")") [:br]]
-            
+
             ;; Economics
             [:div {:style {:margin-bottom "1em"}}
              [:strong "💰 ECONOMICS"] [:br]
@@ -121,57 +121,57 @@
              (str "   Properties Owned: " total-properties) [:br]
              (str "   Money Paid to Bank: $" money-to-bank) [:br]
              (str "   Money Received from Bank: $" money-from-bank) [:br]
-             (str "   Net Bank Flow: $" (Math/abs net-bank-flow) 
+             (str "   Net Bank Flow: $" (Math/abs net-bank-flow)
                   (if (pos? net-bank-flow) " (to bank)" " (from bank)")) [:br]]
-            
+
             ;; Transaction Breakdown (top 5)
             [:div {:style {:margin-bottom "1em"}}
              [:strong "📝 TRANSACTION BREAKDOWN"] [:br]
              (for [[tx-type count] (take 5 (sort-by second > tx-by-type))]
                [:div {:key tx-type} (str "   " (name tx-type) ": " count) [:br]])]
-            
+
             ;; Player Outcomes
             [:div {:style {:margin-bottom "1em"}}
              [:strong "🎯 PLAYER OUTCOMES"] [:br]
              (for [player players]
-               [:div {:key (:id player)} 
-                (str "   Player " (:id player) " (" (name (:status player)) "): $" 
+               [:div {:key (:id player)}
+                (str "   Player " (:id player) " (" (name (:status player)) "): $"
                      (:cash player) " cash, " (count (:properties player)) " properties") [:br]])]
-            
+
             ;; Auctions (if any)
             (when (> auction-initiated 0)
               [:div {:style {:margin-bottom "1em"}}
                [:strong "🏛️ AUCTION ANALYSIS"] [:br]
                (str "   Total Auctions Initiated: " auction-initiated) [:br]
-               (str "   Auctions Completed: " auction-completed 
-                    " (" (if (> auction-initiated 0) 
-                           (.toFixed (* 100 (/ auction-completed auction-initiated)) 1) 
+               (str "   Auctions Completed: " auction-completed
+                    " (" (if (> auction-initiated 0)
+                           (.toFixed (* 100 (/ auction-completed auction-initiated)) 1)
                            "0") "%)") [:br]
-               (str "   Auctions Passed: " auction-passed 
-                    " (" (if (> auction-initiated 0) 
-                           (.toFixed (* 100 (/ auction-passed auction-initiated)) 1) 
+               (str "   Auctions Passed: " auction-passed
+                    " (" (if (> auction-initiated 0)
+                           (.toFixed (* 100 (/ auction-passed auction-initiated)) 1)
                            "0") "%)") [:br]])
-            
+
             ;; Bankruptcies (if any)
             (when (seq bankrupt-players)
               [:div {:style {:margin-bottom "1em"}}
                [:strong "💸 BANKRUPTCIES"] [:br]
                (for [player bankrupt-players]
-                 [:div {:key (:id player)} 
+                 [:div {:key (:id player)}
                   (str "   Player " (:id player) " went bankrupt") [:br]])])
-            
+
             ;; Game Health
             [:div
              (if (and (:exception @game-state) (:failsafe-stop @game-state))
                [:span {:style {:color "red"}} "❌ Game ended with issues"]
                [:span {:style {:color "green"}} "✅ Game completed normally"])]])
          [:p "No game loaded"])]]
-     
+
      [:div {:style {:margin-top "2em"}}
       [:h3 "Transaction Log"]
       [:div {:class "code-block" :style {:height "600px"}}
        (if (and @game-state (:transactions @game-state) (seq (:transactions @game-state)))
-         [:pre {:style {:font-size "11px" :margin "0" :line-height "1.3" :white-space "pre-wrap" 
+         [:pre {:style {:font-size "11px" :margin "0" :line-height "1.3" :white-space "pre-wrap"
                         :color "#cccccc" :background-color "transparent"}}
           (with-out-str (analysis/print-transaction-log @game-state))]
          [:p "Transaction details will appear here..."])]]]))
