@@ -8,32 +8,17 @@
    [jmshelby.monopoly-web.routes :as routes]
    [jmshelby.monopoly-web.subs :as subs]
    [jmshelby.monopoly.analysis :as analysis]
-   [nextjournal.clojure-mode :refer [default-extensions]]
    [reagent.dom :as rdom]
    ["@codemirror/state" :refer [EditorState]]
    ["@codemirror/view" :refer [EditorView]]))
 
-;; Clojure code editor component using nextjournal/clojure-mode
+;; Simple editable textarea for now - will enhance with CodeMirror later
 (defn clojure-editor [props]
-  (let [editor-view (r/atom nil)]
-    (r/create-class
-     {:component-did-mount
-      (fn [this]
-        (let [node (rdom/dom-node this)
-              initial-value (or (:value props) "")
-              extensions (into-array (default-extensions))
-              state (.create EditorState #js {:doc initial-value :extensions extensions})
-              view (new EditorView #js {:state state :parent node})]
-          (reset! editor-view view)))
-      
-      :component-will-unmount
-      (fn [this]
-        (when @editor-view
-          (.destroy @editor-view)))
-      
-      :reagent-render
-      (fn [props]
-        [:div.player-lab-textarea])})))
+  (let [editor-value (r/atom (or (:value props) ""))]
+    (fn [props]
+      [:textarea.player-lab-textarea
+       {:value @editor-value
+        :on-change #(reset! editor-value (.. % -target -value))}])))
 
 ;; Simple HTML-based components without re-com
 (defn simple-battle-opoly-panel []
