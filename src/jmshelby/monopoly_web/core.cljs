@@ -22,43 +22,43 @@
     (rdom/unmount-component-at-node root-el)
     (rdom/render [views/simple-main-panel] root-el)))
 
-(defn- wait-for-next-game
-  [chan]
-  (async/go
-    (when-let [game (async/<! chan)]
-      (println "new game ready, dispatching ...")
-      (re-frame/dispatch [:jmshelby.monopoly-web.events/bulk-sim-game-finished
-                          game])
-      (println "new game ready, dispatching ...continuing"))))
+
 
 ;; An event to start a bulk simulation of monopoly games
 (re-frame/reg-fx
  :monopoly/simulation
  (fn [{:keys [num-games num-players safety-threshold]}]
-   (let [
+   (let [;; Normal params
          num-players (or num-players 4)
-         safety-threshold (or safety-threshold 1000)]
+         safety-threshold (or safety-threshold 1000)
+         worker-script "/js/compiled/worker-simulations.js"
+         sole-worker (js/Worker. worker-script)]
 
-     ;; Start feeding game numbers to input channel
-     (async/go
-       (doseq [game-num (range num-games)]
+     ;; Before we invoke anything, setup message handler on worker(s)
+     (set! (.-onmessage sole-worker)
+           (fn [event]
+             (js.console/log "EVENT back from worker: " event)))
 
-         (let [])
+      ;; Send request to worker to run a game
+     (.postMessage sole-worker
+                   (clj->js {:game-num 1
+                             :num-players num-players
+                             :safety-threshold safety-threshold}))
 
-         (async/>! input-ch game-num))
-       (async/close! input-ch))
 
-;; Dispatch to save the channel
-     (re-frame/dispatch [:jmshelby.monopoly-web.events/bulk-sim-started
-                         output-ch])
-     ;; Prime the compute cycle with the first game
-     (wait-for-next-game output-ch))))
+;;
+     ;; Dispatch to save the channel
+     ;; (re-frame/dispatch [:jmshelby.monopoly-web.events/bulk-sim-started output-ch])
+
+;;
+     )))
 
 (re-frame/reg-fx
  :monopoly/simulation-continue
  (fn [output-ch]
    ;; Just another take and dispatch when ready
-   (wait-for-next-game output-ch)))
+   ;; (wait-for-next-game output-ch)
+   ))
 
 (re-frame/reg-fx
  :monopoly/simulation-stop
