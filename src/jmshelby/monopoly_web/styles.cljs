@@ -140,7 +140,7 @@
   [:.player-lab-header
    {:padding "1em"
     :border-bottom "1px solid #333340"
-    :background-color "#10101a"}
+    :background-color "#0f0f23"}
    [:h3
     {:margin "0 0 1em 0"}]]
 
@@ -172,14 +172,15 @@
   [:.player-lab-right-panel
    {:width "50%"
     :padding "2em"
-    :background-color "#0a0a18"}]
+    :background-color "#0f0f23"}]
 
   [:.player-lab-placeholder
    {:border "2px dashed #333340"
     :padding "2em"
     :text-align "center"
     :margin-top "2em"
-    :color "#666666"}
+    :color "#666666"
+    :background-color "#10101a"}
    [:p
     {:margin "0.5em 0"}]])
 
