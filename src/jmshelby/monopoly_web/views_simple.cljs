@@ -2,11 +2,40 @@
   (:require
    [cljs.pprint :refer [pprint]]
    [re-frame.core :as re-frame]
+   [reagent.core :as r]
    [jmshelby.monopoly.simulation.output :as output]
    [jmshelby.monopoly-web.events :as events]
    [jmshelby.monopoly-web.routes :as routes]
    [jmshelby.monopoly-web.subs :as subs]
-   [jmshelby.monopoly.analysis :as analysis]))
+   [jmshelby.monopoly.analysis :as analysis]
+   [nextjournal.clojure-mode :refer [default-extensions]]
+   [reagent.dom :as rdom]))
+
+;; Import CodeMirror 6 classes
+(def EditorState (.-EditorState (js/require "@codemirror/state")))
+(def EditorView (.-EditorView (js/require "@codemirror/view")))
+
+;; Clojure code editor component using nextjournal/clojure-mode
+(defn clojure-editor [props]
+  (let [editor-view (r/atom nil)]
+    (r/create-class
+     {:component-did-mount
+      (fn [this]
+        (let [node (rdom/dom-node this)
+              initial-value (or (:value props) "")
+              extensions (into-array (default-extensions))
+              state (.create EditorState #js {:doc initial-value :extensions extensions})
+              view (new EditorView #js {:state state :parent node})]
+          (reset! editor-view view)))
+      
+      :component-will-unmount
+      (fn [this]
+        (when @editor-view
+          (.destroy @editor-view)))
+      
+      :reagent-render
+      (fn [props]
+        [:div.player-lab-textarea])})))
 
 ;; Simple HTML-based components without re-com
 (defn simple-battle-opoly-panel []
@@ -262,9 +291,7 @@
     ;; Code Editor Area
     [:div.player-lab-editor-area
      [:h4 "Code:"]
-     [:textarea.player-lab-textarea
-      {:value "(println \"Hello, World!\")\n\n;; This is a placeholder for the player logic editor\n;; Eventually this will contain the Dumb v1 player code\n\n(defn hello-world []\n  (println \"Welcome to the Player Lab!\"))"
-       :read-only true}]]]
+     [clojure-editor {:value "(println \"Hello, World!\")\n\n;; This is a placeholder for the player logic editor\n;; Eventually this will contain the Dumb v1 player code\n\n(defn hello-world []\n  (println \"Welcome to the Player Lab!\"))"}]]]
    
    ;; Right Panel: Stats/Results
    [:div.player-lab-right-panel

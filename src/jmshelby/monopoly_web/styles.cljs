@@ -160,14 +160,32 @@
     :font-family "\"Courier New\", \"Monaco\", \"Consolas\", monospace"
     :font-size "14px"
     :border "1px solid #333340"
-    :padding "1em"
+    :padding "0"
     :background-color "#10101a"
     :color "#cccccc"
     :resize "none"}
    [:&:focus
     {:border-color "#009900"
      :outline "none"
-     :box-shadow "0 0 3px #009900"}]]
+     :box-shadow "0 0 3px #009900"}]
+   
+   ;; CodeMirror 6 styling
+   [:.cm-editor
+    {:height "400px"
+     :background-color "#10101a"
+     :color "#cccccc"
+     :font-family "\"Courier New\", \"Monaco\", \"Consolas\", monospace"
+     :font-size "14px"}]
+   
+   [:.cm-content
+    {:padding "1em"
+     :color "#cccccc"}]
+   
+   [:.cm-focused
+    {:outline "none"}]
+   
+   [:.cm-line
+    {:color "#cccccc"}]]
 
   [:.player-lab-right-panel
    {:width "50%"
