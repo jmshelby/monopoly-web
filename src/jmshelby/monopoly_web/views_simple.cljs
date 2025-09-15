@@ -9,11 +9,9 @@
    [jmshelby.monopoly-web.subs :as subs]
    [jmshelby.monopoly.analysis :as analysis]
    [nextjournal.clojure-mode :refer [default-extensions]]
-   [reagent.dom :as rdom]))
-
-;; Import CodeMirror 6 classes
-(def EditorState (.-EditorState (js/require "@codemirror/state")))
-(def EditorView (.-EditorView (js/require "@codemirror/view")))
+   [reagent.dom :as rdom]
+   ["@codemirror/state" :refer [EditorState]]
+   ["@codemirror/view" :refer [EditorView]]))
 
 ;; Clojure code editor component using nextjournal/clojure-mode
 (defn clojure-editor [props]
