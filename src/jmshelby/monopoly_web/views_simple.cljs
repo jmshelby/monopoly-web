@@ -24,7 +24,11 @@
               :on-click #(do
                           (re-frame/dispatch [::events/set-game-mode :bulk])
                           (re-frame/dispatch [::events/navigate :setup]))}
-     "Run lots of games w/stats"]]])
+     "Run lots of games w/stats"]
+    [:button {:class "btn-info"
+              :style {:display "block" :margin "1em auto"}
+              :on-click #(re-frame/dispatch [::events/navigate :player-lab])}
+     "Player Lab"]]])
 
 (defn simple-setup-panel []
   (let [mode (re-frame/subscribe [::subs/game-mode])]
@@ -41,10 +45,6 @@
                 :style {:margin-right "1em"}
                 :on-click #(re-frame/dispatch [::events/navigate :battle-opoly])}
        "← Back"]
-      [:button {:class "btn-info"
-                :style {:margin-right "1em"}
-                :on-click #(re-frame/dispatch [::events/navigate :player-lab])}
-       "Player Lab"]
       [:button {:class "btn-success"
                 :on-click #(re-frame/dispatch [::events/navigate
                                               (if (= @mode :single)
