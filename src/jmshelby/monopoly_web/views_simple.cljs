@@ -41,6 +41,10 @@
                 :style {:margin-right "1em"}
                 :on-click #(re-frame/dispatch [::events/navigate :battle-opoly])}
        "← Back"]
+      [:button {:class "btn-info"
+                :style {:margin-right "1em"}
+                :on-click #(re-frame/dispatch [::events/navigate :player-lab])}
+       "Player Lab"]
       [:button {:class "btn-success"
                 :on-click #(re-frame/dispatch [::events/navigate
                                               (if (= @mode :single)
@@ -242,11 +246,39 @@
          ;
          ]])]))
 
+(defn simple-player-lab-panel []
+  [:div {:style {:display "flex" :height "100vh"}}
+   ;; Left Panel: Code Editor
+   [:div {:style {:width "50%" :border-right "1px solid #ccc" :display "flex" :flex-direction "column"}}
+    [:div {:style {:padding "1em" :border-bottom "1px solid #eee" :background-color "#f8f9fa"}}
+     [:h3 {:style {:margin "0 0 1em 0"}} "Player Logic Editor"]
+     [:button {:style {:margin-right "1em"}
+               :on-click #(re-frame/dispatch [::events/navigate :setup])}
+      "← Back to Setup"]
+     [:button {:style {:background-color "#28a745" :color "white" :border "none" :padding "0.5em 1em"}}
+      "Run Simulation"]]
+    
+    ;; Code Editor Area
+    [:div {:style {:flex "1" :padding "1em"}}
+     [:h4 "Code:"]
+     [:textarea {:style {:width "100%" :height "400px" :font-family "monospace" :font-size "14px"
+                         :border "1px solid #ddd" :padding "1em"}
+                 :value "(println \"Hello, World!\")\n\n;; This is a placeholder for the player logic editor\n;; Eventually this will contain the Dumb v1 player code\n\n(defn hello-world []\n  (println \"Welcome to the Player Lab!\"))"
+                 :read-only true}]]]
+   
+   ;; Right Panel: Stats/Results
+   [:div {:style {:width "50%" :padding "2em" :background-color "#fafafa"}}
+    [:h3 "Simulation Results"]
+    [:div {:style {:border "2px dashed #ccc" :padding "2em" :text-align "center" :margin-top "2em"}}
+     [:p {:style {:font-size "18px" :color "#666"}} "This is where stats would be"]
+     [:p {:style {:color "#999"}} "Simulation results and player performance metrics will appear here after running the code."]]]])
+
 ;; Panel routing for simple components
 (defmethod routes/panels :battle-opoly-panel [] [simple-battle-opoly-panel])
 (defmethod routes/panels :setup-panel [] [simple-setup-panel])
 (defmethod routes/panels :single-game-panel [] [simple-single-game-panel])
 (defmethod routes/panels :bulk-simulation-panel [] [simple-bulk-simulation-panel])
+(defmethod routes/panels :player-lab-panel [] [simple-player-lab-panel])
 
 ;; Simple main panel
 (defn simple-main-panel []
