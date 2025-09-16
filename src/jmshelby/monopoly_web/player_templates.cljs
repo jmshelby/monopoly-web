@@ -306,8 +306,7 @@
                                               (->> owned-props
                                                    (filter #(= :mortgaged (:status %)))
                                                    (filter #(let [property (-> % :def)
-                                                                  unmortgage-cost #?(:clj (-> property :mortgage (* 1.1) Math/ceil int)
-                                                                                     :cljs (-> property :mortgage (* 1.1) js/Math.ceil int))]
+                                                                  unmortgage-cost (-> property :mortgage (* 1.1) js/Math.ceil int)]
                                                               (>= cash unmortgage-cost)))
                                                    (sort-by #(-> % :def :mortgage))))]
                   (cond
