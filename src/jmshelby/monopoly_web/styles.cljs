@@ -169,88 +169,17 @@
      :outline "none"
      :box-shadow "0 0 3px #009900"}]]
 
-  ;; CodeMirror 6 Dark Theme
+  ;; CodeMirror 6 container styling (oneDark theme handles most styling)
   [:.cm-editor
    {:height "400px !important"
-    :background-color "#10101a !important"
-    :color "#cccccc !important"
     :font-family "\"Courier New\", \"Monaco\", \"Consolas\", monospace !important"
     :font-size "14px !important"
     :border "1px solid #333340 !important"}]
-  
-  [:.cm-content
-   {:padding "1em !important"
-    :color "#cccccc !important"
-    :background-color "#10101a !important"}]
   
   [:.cm-focused
    {:outline "none !important"
     :border-color "#009900 !important"
     :box-shadow "0 0 3px #009900 !important"}]
-  
-  [:.cm-line
-   {:color "#cccccc !important"}]
-  
-  [:.cm-gutters
-   {:background-color "#0f0f23 !important"
-    :color "#666666 !important"
-    :border-right "1px solid #333340 !important"}]
-  
-  [:.cm-lineNumbers
-   {:color "#666666 !important"}]
-
-  ;; Cursor and selection improvements
-  [:.cm-cursor
-   {:border-left "2px solid #00cc00 !important"
-    :border-right "none !important"
-    :margin-left "-1px !important"
-    :animation "blink 1.2s infinite !important"}]
-  
-  [:.cm-cursor-primary
-   {:border-left "2px solid #00cc00 !important"
-    :border-right "none !important" 
-    :margin-left "-1px !important"
-    :animation "blink 1.2s infinite !important"}]
-  
-  ;; Blinking cursor animation
-  ["@keyframes blink"
-   ["0%, 50%" {:opacity "1"}]
-   ["51%, 100%" {:opacity "0"}]]
-  
-  ;; Alternative cursor styles
-  [:.cm-editor
-   ["&.cm-focused .cm-cursor"
-    {:border-left "2px solid #00ff00 !important"
-     :background-color "rgba(0, 255, 0, 0.3) !important"
-     :width "2px !important"
-     :margin-left "0 !important"}]]
-  
-  [:.cm-selectionBackground
-   {:background-color "#333340 !important"}]
-  
-  [:.cm-searchMatch
-   {:background-color "#4a4a5a !important"
-    :outline "1px solid #666666 !important"}]
-  
-  [:.cm-searchMatch-selected
-   {:background-color "#5a5a6a !important"
-    :outline "1px solid #888888 !important"}]
-
-  ;; Active line highlighting  
-  [:.cm-activeLine
-   {:background-color "#1a1a2e !important"}]
-  
-  [:.cm-activeLineGutter
-   {:background-color "#1a1a2e !important"}]
-
-  ;; Bracket matching
-  [:.cm-matchingBracket
-   {:background-color "#333340 !important"
-    :outline "1px solid #666666 !important"}]
-  
-  [:.cm-nonmatchingBracket
-   {:background-color "#4a1a1a !important"
-    :outline "1px solid #cc3333 !important"}]
 
   [:.player-lab-right-panel
    {:width "50%"
