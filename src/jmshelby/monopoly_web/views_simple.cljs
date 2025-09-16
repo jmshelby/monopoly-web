@@ -15,7 +15,8 @@
    ["@codemirror/language" :refer [bracketMatching]]
    ["@codemirror/theme-one-dark" :refer [oneDark]]
    [nextjournal.clojure-mode :as cm]
-   [applied-science.js-interop :as j]))
+   [applied-science.js-interop :as j]
+   [jmshelby.monopoly-web.player-templates :as templates]))
 
 ;; CodeMirror 6 editor component using nextjournal pattern
 (defn clojure-editor [props]
@@ -296,7 +297,7 @@
     ;; Code Editor Area
     [:div.player-lab-editor-area
      [:h4 "Code:"]
-     [clojure-editor {:value "(println \"Hello, World!\")\n\n;; This is a placeholder for the player logic editor\n;; Eventually this will contain the Dumb v1 player code\n\n(defn hello-world []\n  (println \"Welcome to the Player Lab!\"))"}]]]
+     [clojure-editor {:value templates/dumb-player-template}]]]
    
    ;; Right Panel: Stats/Results
    [:div.player-lab-right-panel
