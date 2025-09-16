@@ -154,28 +154,13 @@
    [:h4
     {:margin-bottom "0.5em"}]]
 
-  [:.player-lab-textarea
-   {:width "100%"
-    :height "400px"
-    :font-family "\"Courier New\", \"Monaco\", \"Consolas\", monospace"
-    :font-size "14px"
-    :border "1px solid #333340"
-    :padding "0"
-    :background-color "#10101a"
-    :color "#cccccc"
-    :resize "none"}
-   [:&:focus
-    {:border-color "#009900"
-     :outline "none"
-     :box-shadow "0 0 3px #009900"}]]
-
   ;; CodeMirror 6 container styling (oneDark theme handles most styling)
   [:.cm-editor
-   {:height "400px !important"
+   {:height "800px !important"
     :font-family "\"Courier New\", \"Monaco\", \"Consolas\", monospace !important"
     :font-size "14px !important"
     :border "1px solid #333340 !important"}]
-  
+
   [:.cm-focused
    {:outline "none !important"
     :border-color "#009900 !important"
