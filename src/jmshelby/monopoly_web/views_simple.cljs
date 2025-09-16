@@ -10,15 +10,33 @@
    [jmshelby.monopoly.analysis :as analysis]
    [reagent.dom :as rdom]
    ["@codemirror/state" :refer [EditorState]]
-   ["@codemirror/view" :refer [EditorView]]))
+   ["@codemirror/view" :refer [EditorView lineNumbers keymap]]
+   ["@codemirror/commands" :refer [defaultKeymap history historyKeymap]]
+   ["@codemirror/language" :refer [syntaxHighlighting defaultHighlightStyle]]
+   [nextjournal.clojure-mode :as cm]
+   [applied-science.js-interop :as j]))
 
-;; Simple editable textarea for now - will enhance with CodeMirror later
+;; CodeMirror 6 editor component using nextjournal pattern
 (defn clojure-editor [props]
-  (let [editor-value (r/atom (or (:value props) ""))]
-    (fn [props]
-      [:textarea.player-lab-textarea
-       {:value @editor-value
-        :on-change #(reset! editor-value (.. % -target -value))}])))
+  (r/with-let [!view (r/atom nil)
+               mount! (fn [el]
+                        (when el
+                          (let [initial-value (or (:value props) "")
+                                extensions #js [(syntaxHighlighting defaultHighlightStyle)
+                                                (history)
+                                                cm/default-extensions
+                                                (.of keymap cm/complete-keymap)
+                                                (.of keymap historyKeymap)]
+                                state (.create EditorState 
+                                               #js {:doc initial-value 
+                                                    :extensions extensions})
+                                view (new EditorView #js {:state state :parent el})]
+                            (reset! !view view))))]
+    [:div.player-lab-textarea {:ref mount!}]
+    
+    (finally
+      (when @!view
+        (.destroy @!view)))))
 
 ;; Simple HTML-based components without re-com
 (defn simple-battle-opoly-panel []

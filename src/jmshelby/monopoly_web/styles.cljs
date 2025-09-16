@@ -167,25 +167,37 @@
    [:&:focus
     {:border-color "#009900"
      :outline "none"
-     :box-shadow "0 0 3px #009900"}]
-   
-   ;; CodeMirror 6 styling
-   [:.cm-editor
-    {:height "400px"
-     :background-color "#10101a"
-     :color "#cccccc"
-     :font-family "\"Courier New\", \"Monaco\", \"Consolas\", monospace"
-     :font-size "14px"}]
-   
-   [:.cm-content
-    {:padding "1em"
-     :color "#cccccc"}]
-   
-   [:.cm-focused
-    {:outline "none"}]
-   
-   [:.cm-line
-    {:color "#cccccc"}]]
+     :box-shadow "0 0 3px #009900"}]]
+
+  ;; CodeMirror 6 styling
+  [:.cm-editor
+   {:height "400px !important"
+    :background-color "#10101a !important"
+    :color "#cccccc !important"
+    :font-family "\"Courier New\", \"Monaco\", \"Consolas\", monospace !important"
+    :font-size "14px !important"
+    :border "1px solid #333340 !important"}]
+  
+  [:.cm-content
+   {:padding "1em !important"
+    :color "#cccccc !important"
+    :background-color "#10101a !important"}]
+  
+  [:.cm-focused
+   {:outline "none !important"
+    :border-color "#009900 !important"
+    :box-shadow "0 0 3px #009900 !important"}]
+  
+  [:.cm-line
+   {:color "#cccccc !important"}]
+  
+  [:.cm-gutters
+   {:background-color "#0f0f23 !important"
+    :color "#666666 !important"
+    :border-right "1px solid #333340 !important"}]
+  
+  [:.cm-lineNumbers
+   {:color "#666666 !important"}]
 
   [:.player-lab-right-panel
    {:width "50%"
