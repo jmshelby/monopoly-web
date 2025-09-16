@@ -10,11 +10,41 @@
    [jmshelby.monopoly.analysis :as analysis]
    [reagent.dom :as rdom]
    ["@codemirror/state" :refer [EditorState]]
-   ["@codemirror/view" :refer [EditorView lineNumbers keymap]]
+   ["@codemirror/view" :refer [EditorView lineNumbers keymap highlightActiveLine]]
    ["@codemirror/commands" :refer [defaultKeymap history historyKeymap]]
-   ["@codemirror/language" :refer [syntaxHighlighting defaultHighlightStyle]]
+   ["@codemirror/language" :refer [syntaxHighlighting HighlightStyle bracketMatching]]
+   ["@lezer/highlight" :refer [tags]]
    [nextjournal.clojure-mode :as cm]
    [applied-science.js-interop :as j]))
+
+;; Custom dark theme for CodeMirror
+(def dark-highlight-style
+  (.define HighlightStyle
+           #js [#js {:tag (.-comment tags) :color "#666666"}          ; Comments
+                #js {:tag (.-string tags) :color "#a3be8c"}           ; Strings  
+                #js {:tag (.-number tags) :color "#b48ead"}           ; Numbers
+                #js {:tag (.-keyword tags) :color "#81a1c1"}          ; Keywords
+                #js {:tag (.-atom tags) :color "#d08770"}             ; Atoms/booleans
+                #js {:tag (.-variableName tags) :color "#cccccc"}     ; Variables
+                #js {:tag (.-function tags) :color "#88c0d0"}         ; Functions
+                #js {:tag (.-operator tags) :color "#eceff4"}         ; Operators
+                #js {:tag (.-bracket tags) :color "#eceff4"}          ; Brackets
+                #js {:tag (.-paren tags) :color "#eceff4"}            ; Parentheses
+                #js {:tag (.-meta tags) :color "#5e81ac"}             ; Meta
+                #js {:tag (.-namespace tags) :color "#8fbcbb"}]))     ; Namespaces
+
+;; Custom theme extension for cursor and editor styling
+(def dark-theme
+  (.theme EditorView 
+          #js {".cm-content" #js {:caretColor "#00ff00"
+                                  :color "#cccccc"}
+               ".cm-cursor, .cm-dropCursor" #js {:borderLeftColor "#00ff00"
+                                                 :borderLeftWidth "2px"
+                                                 :borderLeftStyle "solid"
+                                                 :marginLeft "-1px"}
+               ".cm-editor" #js {:backgroundColor "#10101a"
+                                 :color "#cccccc"}
+               ".cm-focused" #js {:outline "none"}}))
 
 ;; CodeMirror 6 editor component using nextjournal pattern
 (defn clojure-editor [props]
@@ -22,8 +52,12 @@
                mount! (fn [el]
                         (when el
                           (let [initial-value (or (:value props) "")
-                                extensions #js [(syntaxHighlighting defaultHighlightStyle)
+                                extensions #js [(syntaxHighlighting dark-highlight-style)
                                                 (history)
+                                                (lineNumbers)
+                                                (highlightActiveLine)
+                                                (bracketMatching)
+                                                dark-theme
                                                 cm/default-extensions
                                                 (.of keymap cm/complete-keymap)
                                                 (.of keymap historyKeymap)]
