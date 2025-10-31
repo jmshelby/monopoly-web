@@ -96,3 +96,8 @@
  ::player-lab-results
  (fn [db _]
    (get-in db [:player-lab :results])))
+
+(re-frame/reg-sub
+ ::player-lab-error
+ (fn [db _]
+   (get-in db [:player-lab :error])))

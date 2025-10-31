@@ -1,6 +1,6 @@
 (ns jmshelby.monopoly-web.views-simple
   (:require
-   [cljs.pprint :refer [pprint]]
+   [cljs.pprint :as cljs.pprint :refer [pprint]]
    [re-frame.core :as re-frame]
    [reagent.core :as r]
    [jmshelby.monopoly.simulation.output :as output]
@@ -293,7 +293,8 @@
 
 (defn simple-player-lab-panel []
   (let [running? (re-frame/subscribe [::subs/player-lab-running?])
-        results (re-frame/subscribe [::subs/player-lab-results])]
+        results (re-frame/subscribe [::subs/player-lab-results])
+        error (re-frame/subscribe [::subs/player-lab-error])]
     [:div.player-lab-container
      ;; Left Panel: Code Editor
      [:div.player-lab-left-panel
@@ -305,11 +306,10 @@
          "← Back"]
         [:button.btn-success
          {:on-click #(do
-                      (println "Run Simulation clicked!")
-                      (let [code @(re-frame/subscribe [::subs/player-lab-code])]
-                        (println "Current code:" code)
-                        (re-frame/dispatch [::events/set-player-lab-running true])))}
-         (if @running? "Running..." "Run Simulation")]]]
+                      (re-frame/dispatch [::events/set-player-lab-running true])
+                      (re-frame/dispatch [::events/evaluate-player-code]))
+          :disabled @running?}
+         (if @running? "Evaluating..." "Test Code")]]]
 
       ;; Code Editor Area
       [:div.player-lab-editor-area
@@ -319,14 +319,38 @@
 
      ;; Right Panel: Stats/Results
      [:div.player-lab-right-panel
-      [:h3 "Simulation Results"]
-      (if @results
-        [:div.code-block
-         [:pre (str @results)]]
+      [:h3 "Evaluation Results"]
+
+      (cond
+        ;; Show error if present
+        @error
+        [:div.code-block {:style {:border-color "#cc3333"}}
+         [:div {:style {:color "#ff6666" :font-weight "bold" :margin-bottom "1em"}}
+          "❌ Error:"]
+         [:pre {:style {:color "#ffcccc"}} @error]]
+
+        ;; Show results if present
+        @results
+        [:div.code-block {:style {:border-color "#009900"}}
+         [:div {:style {:color "#00ff00" :font-weight "bold" :margin-bottom "1em"}}
+          "✓ " (:message @results)]
+         [:div {:style {:margin-top "1em"}}
+          [:strong "Test Call Result:"] [:br]
+          [:pre {:style {:margin-top "0.5em" :font-size "11px"}}
+           (with-out-str (cljs.pprint/pprint (:test-result @results)))]]]
+
+        ;; Show placeholder
+        :else
         [:div.player-lab-placeholder
          [:p "Edit the player logic code on the left"]
-         [:p "Click 'Run Simulation' to test your custom player strategy"]
-         [:p "Results will appear here"]])]]))
+         [:p "The code must define a 'decide' function that takes:"]
+         [:ul {:style {:text-align "left" :max-width "400px" :margin "1em auto"}}
+          [:li "game-state - current game state"]
+          [:li "player-id - the player making the decision"]
+          [:li "method - the decision type (e.g., :take-turn, :property-option)"]
+          [:li "params - additional parameters for the decision"]]
+         [:p {:style {:margin-top "1em"}}
+          "Click 'Test Code' to evaluate and test your player logic"]])]]))
 
 ;; Panel routing for simple components
 (defmethod routes/panels :battle-opoly-panel [] [simple-battle-opoly-panel])

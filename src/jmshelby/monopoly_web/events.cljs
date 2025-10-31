@@ -5,7 +5,8 @@
    [jmshelby.monopoly-web.db :as db]
    [jmshelby.monopoly.util.time :as time]
    [jmshelby.monopoly.core :as monopoly-core]
-   [jmshelby.monopoly.simulation :as core-sim]))
+   [jmshelby.monopoly.simulation :as core-sim]
+   [jmshelby.monopoly-web.player-evaluator :as evaluator]))
 
 (re-frame/reg-event-db
  ::initialize-db
@@ -257,3 +258,30 @@
  ::set-player-lab-results
  (fn [db [_ results]]
    (assoc-in db [:player-lab :results] results)))
+
+(re-frame/reg-event-db
+ ::set-player-lab-error
+ (fn [db [_ error]]
+   (assoc-in db [:player-lab :error] error)))
+
+(re-frame/reg-event-fx
+ ::evaluate-player-code
+ (fn [{:keys [db]} _]
+   (let [code (get-in db [:player-lab :code])]
+     (if (and code (not (empty? code)))
+       (let [eval-result (evaluator/test-player-code code)]
+         (if (:success eval-result)
+           {:db (-> db
+                    (assoc-in [:player-lab :decide-fn] (:decide-fn eval-result))
+                    (assoc-in [:player-lab :results] {:status "success"
+                                                      :message (:message eval-result)
+                                                      :test-result (:test-result eval-result)})
+                    (assoc-in [:player-lab :error] nil)
+                    (assoc-in [:player-lab :running?] false))}
+           {:db (-> db
+                    (assoc-in [:player-lab :error] (:error eval-result))
+                    (assoc-in [:player-lab :results] nil)
+                    (assoc-in [:player-lab :running?] false))}))
+       {:db (-> db
+                (assoc-in [:player-lab :error] "No code to evaluate")
+                (assoc-in [:player-lab :running?] false))}))))
