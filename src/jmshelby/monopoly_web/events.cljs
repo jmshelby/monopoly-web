@@ -241,3 +241,19 @@
  ::set-error
  (fn [db [_ error-message]]
    (assoc db :error-message error-message)))
+
+;; Player Lab events
+(re-frame/reg-event-db
+ ::set-player-lab-code
+ (fn [db [_ code]]
+   (assoc-in db [:player-lab :code] code)))
+
+(re-frame/reg-event-db
+ ::set-player-lab-running
+ (fn [db [_ running?]]
+   (assoc-in db [:player-lab :running?] running?)))
+
+(re-frame/reg-event-db
+ ::set-player-lab-results
+ (fn [db [_ results]]
+   (assoc-in db [:player-lab :results] results)))

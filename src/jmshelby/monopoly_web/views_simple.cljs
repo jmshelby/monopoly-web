@@ -21,9 +21,16 @@
 ;; CodeMirror 6 editor component using nextjournal pattern
 (defn clojure-editor [props]
   (r/with-let [!view (r/atom nil)
+               on-change (or (:on-change props) (fn [_]))
                mount! (fn [el]
                         (when el
                           (let [initial-value (or (:value props) "")
+                                ;; Create an update listener extension
+                                update-listener (.-of (.-updateListener EditorView)
+                                                     (fn [view-update]
+                                                       (when (.-docChanged view-update)
+                                                         (let [new-code (str (.. view-update -state -doc))]
+                                                           (on-change new-code)))))
                                 extensions #js [oneDark
                                                 (history)
                                                 (lineNumbers)
@@ -31,14 +38,17 @@
                                                 (bracketMatching)
                                                 cm/default-extensions
                                                 (.of keymap cm/complete-keymap)
-                                                (.of keymap historyKeymap)]
-                                state (.create EditorState 
-                                               #js {:doc initial-value 
+                                                (.of keymap historyKeymap)
+                                                update-listener]
+                                state (.create EditorState
+                                               #js {:doc initial-value
                                                     :extensions extensions})
                                 view (new EditorView #js {:state state :parent el})]
-                            (reset! !view view))))]
+                            (reset! !view view)
+                            ;; Dispatch initial value to app state
+                            (on-change initial-value))))]
     [:div.player-lab-textarea {:ref mount!}]
-    
+
     (finally
       (when @!view
         (.destroy @!view)))))
@@ -282,29 +292,41 @@
          ]])]))
 
 (defn simple-player-lab-panel []
-  [:div.player-lab-container
-   ;; Left Panel: Code Editor
-   [:div.player-lab-left-panel
-    [:div.player-lab-header
-     [:h3 "Player Logic Editor"]
-     [:div.player-lab-buttons
-      [:button.btn-secondary
-       {:on-click #(re-frame/dispatch [::events/navigate :battle-opoly])}
-       "← Back"]
-      [:button.btn-success
-       "Run Simulation"]]]
-    
-    ;; Code Editor Area
-    [:div.player-lab-editor-area
-     [:h4 "Code:"]
-     [clojure-editor {:value templates/dumb-player-template}]]]
-   
-   ;; Right Panel: Stats/Results
-   [:div.player-lab-right-panel
-    [:h3 "Simulation Results"]
-    [:div.player-lab-placeholder
-     [:p "This is where stats would be"]
-     [:p "Simulation results and player performance metrics will appear here after running the code."]]]])
+  (let [running? (re-frame/subscribe [::subs/player-lab-running?])
+        results (re-frame/subscribe [::subs/player-lab-results])]
+    [:div.player-lab-container
+     ;; Left Panel: Code Editor
+     [:div.player-lab-left-panel
+      [:div.player-lab-header
+       [:h3 "Player Logic Editor"]
+       [:div.player-lab-buttons
+        [:button.btn-secondary
+         {:on-click #(re-frame/dispatch [::events/navigate :battle-opoly])}
+         "← Back"]
+        [:button.btn-success
+         {:on-click #(do
+                      (println "Run Simulation clicked!")
+                      (let [code @(re-frame/subscribe [::subs/player-lab-code])]
+                        (println "Current code:" code)
+                        (re-frame/dispatch [::events/set-player-lab-running true])))}
+         (if @running? "Running..." "Run Simulation")]]]
+
+      ;; Code Editor Area
+      [:div.player-lab-editor-area
+       [:h4 "Code:"]
+       [clojure-editor {:value templates/dumb-player-template
+                        :on-change #(re-frame/dispatch [::events/set-player-lab-code %])}]]]
+
+     ;; Right Panel: Stats/Results
+     [:div.player-lab-right-panel
+      [:h3 "Simulation Results"]
+      (if @results
+        [:div.code-block
+         [:pre (str @results)]]
+        [:div.player-lab-placeholder
+         [:p "Edit the player logic code on the left"]
+         [:p "Click 'Run Simulation' to test your custom player strategy"]
+         [:p "Results will appear here"]])]]))
 
 ;; Panel routing for simple components
 (defmethod routes/panels :battle-opoly-panel [] [simple-battle-opoly-panel])
