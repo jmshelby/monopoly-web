@@ -6,16 +6,15 @@
 
 ;; Create a SCI context with necessary namespaces and functions
 ;; available to the evaluated player code
-(def sci-context
-  (sci/init {:namespaces {'clojure.set {'difference set/difference
-                                        'union set/union
-                                        'intersection set/intersection}
-                          'jmshelby.monopoly.util {'player-by-id util/player-by-id
-                                                   'owned-properties util/owned-properties
-                                                   'owned-property-details util/owned-property-details
-                                                   'street-group-counts util/street-group-counts
-                                                   'potential-house-purchases util/potential-house-purchases}}
-             :classes {'js js/globalThis}}))
+(defn make-sci-opts []
+  {:namespaces {'clojure.set {'difference set/difference
+                              'union set/union
+                              'intersection set/intersection}
+                'jmshelby.monopoly.util {'player-by-id util/player-by-id
+                                         'owned-properties util/owned-properties
+                                         'owned-property-details util/owned-property-details
+                                         'street-group-counts util/street-group-counts
+                                         'potential-house-purchases util/potential-house-purchases}}})
 
 (defn evaluate-player-code
   "Evaluate player code string and return the decide function.
@@ -24,17 +23,19 @@
    - {:success false :error <msg>} on error"
   [code-str]
   (try
-    ;; Evaluate the code in the SCI context
-    (sci/eval-string* sci-context code-str)
+    ;; Create a context that we'll reuse
+    (let [ctx (sci/init (make-sci-opts))]
+      ;; Evaluate the code in the context
+      (sci/eval-string* ctx code-str)
 
-    ;; Try to extract the 'decide' function from the context
-    (let [decide-fn (sci/eval-string* sci-context "decide")]
-      (if (fn? decide-fn)
-        {:success true :decide-fn decide-fn}
-        {:success false :error "No 'decide' function found in player code"}))
+      ;; Try to extract the 'decide' function from the same context
+      (let [decide-fn (sci/eval-string* ctx "decide")]
+        (if (fn? decide-fn)
+          {:success true :decide-fn decide-fn}
+          {:success false :error "No 'decide' function found in player code"})))
 
-    (catch js/Error e
-      {:success false :error (str "Evaluation error: " (.-message e))})))
+    (catch :default e
+      {:success false :error (str "Evaluation error: " (ex-message e))})))
 
 (defn test-player-code
   "Test the player code by evaluating it and calling decide with test params.
@@ -56,7 +57,7 @@
            :decide-fn decide-fn
            :test-result test-result
            :message "Player code evaluated and tested successfully"})
-        (catch js/Error e
+        (catch :default e
           {:success false
-           :error (str "Runtime error during test: " (.-message e))}))
+           :error (str "Runtime error during test: " (ex-message e))}))
       eval-result)))
