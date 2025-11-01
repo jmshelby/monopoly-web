@@ -15,8 +15,7 @@
                                                    'owned-property-details util/owned-property-details
                                                    'street-group-counts util/street-group-counts
                                                    'potential-house-purchases util/potential-house-purchases}}
-             :classes {'js js/globalThis
-                       :allow :all}}))
+             :classes {'js js/globalThis}}))
 
 (defn evaluate-player-code
   "Evaluate player code string and return the decide function.
