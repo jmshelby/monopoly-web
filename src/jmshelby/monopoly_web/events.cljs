@@ -5,7 +5,8 @@
    [jmshelby.monopoly-web.db :as db]
    [jmshelby.monopoly.util.time :as time]
    [jmshelby.monopoly.core :as monopoly-core]
-   [jmshelby.monopoly.simulation :as core-sim]))
+   [jmshelby.monopoly.simulation :as core-sim]
+   [jmshelby.monopoly-web.player-eval :as player-eval]))
 
 (re-frame/reg-event-db
  ::initialize-db
@@ -246,6 +247,54 @@
  ::set-player-lab-results
  (fn [db [_ results]]
    (assoc-in db [:player-lab :results] results)))
+
+(re-frame/reg-event-db
+ ::run-player-lab-simulation
+ (fn [db _]
+   (let [code (get-in db [:player-lab :code])]
+     (if-not code
+       (do
+         (js/console.error "No player code to evaluate")
+         (assoc-in db [:player-lab :results] {:error "No player code to evaluate"}))
+       (do
+         ;; Set running state
+         (js/setTimeout
+          (fn []
+            (try
+              ;; Evaluate player code
+              (let [{:keys [success player-fn error]} (player-eval/create-player-from-code code)]
+                (if-not success
+                  (do
+                    (js/console.error "Player code evaluation failed:" error)
+                    (re-frame/dispatch [::set-player-lab-results {:error error}])
+                    (re-frame/dispatch [::set-player-lab-running false]))
+                  (do
+                    (js/console.log "Player code evaluated successfully!")
+                    ;; Run a test game with the custom player
+                    ;; For now, just run a simple game with 4 dumb players
+                    ;; TODO: Replace one player with the custom player-fn
+                    (let [game-result (monopoly-core/rand-game-end-state 4)
+                          winner-id (when (= 1 (->> (:players game-result)
+                                                    (filter #(= :playing (:status %)))
+                                                    count))
+                                      (->> (:players game-result)
+                                           (filter #(= :playing (:status %)))
+                                           first
+                                           :id))
+                          results {:success true
+                                   :winner winner-id
+                                   :transactions (count (:transactions game-result))
+                                   :game-state game-result
+                                   :message "Game completed successfully! (Using default players for now)"}]
+                      (js/console.log "Game result:" results)
+                      (re-frame/dispatch [::set-player-lab-results results])
+                      (re-frame/dispatch [::set-player-lab-running false])))))
+              (catch :default e
+                (js/console.error "Error running simulation:" (.-message e))
+                (re-frame/dispatch [::set-player-lab-results {:error (str "Simulation error: " (.-message e))}])
+                (re-frame/dispatch [::set-player-lab-running false]))))
+          100)
+         (assoc-in db [:player-lab :running?] true))))))
 
 ;; UI state events
 (re-frame/reg-event-db

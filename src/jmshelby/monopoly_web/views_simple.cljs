@@ -307,8 +307,9 @@
          {:on-click #(re-frame/dispatch [::events/navigate :battle-opoly])}
          "← Back"]
         [:button.btn-success
-         {:on-click #(js/console.log "Run Simulation - not implemented yet")}
-         "Run Simulation"]]]
+         {:disabled @running?
+          :on-click #(re-frame/dispatch [::events/run-player-lab-simulation])}
+         (if @running? "Running..." "Run Simulation")]]]
 
       ;; Code Editor Area
       [:div.player-lab-editor-area
@@ -320,11 +321,39 @@
      [:div.player-lab-right-panel
       [:h3 "Simulation Results"]
       [:div.player-lab-placeholder
-       (if @results
-         [:pre (str @results)]
+       (cond
+         @running?
          [:div
-          [:p "This is where stats would be"]
-          [:p "Simulation results and player performance metrics will appear here after running the code."]])]]]))
+          [:p {:style {:color "#ffff66"}} "⏳ Running simulation..."]
+          [:p "Evaluating your player code and running a test game."]]
+
+         (and @results (:error @results))
+         [:div
+          [:p {:style {:color "#ff6666"}} "❌ Error"]
+          [:pre {:style {:color "#ff6666" :white-space "pre-wrap"}}
+           (:error @results)]]
+
+         (and @results (:success @results))
+         [:div {:class "code-block"}
+          [:p {:style {:color "#66ff66"}} "✅ " (:message @results)]
+          [:div {:style {:margin-top "1em"}}
+           [:strong "Game Results:"] [:br]
+           (str "Winner: Player " (:winner @results)) [:br]
+           (str "Total Transactions: " (:transactions @results)) [:br]]
+          (when-let [game-state (:game-state @results)]
+            [:div {:style {:margin-top "1em"}}
+             [:strong "Players:"] [:br]
+             (for [player (:players game-state)]
+               [:div {:key (:id player)}
+                (str "  Player " (:id player) ": "
+                     (name (:status player)) ", $" (:cash player)) [:br]])])]
+
+         :else
+         [:div
+          [:p "Click 'Run Simulation' to test your player code."]
+          [:p "Your code will be evaluated and used to run a Monopoly game simulation."]
+          [:p {:style {:color "#666666" :font-size "0.9em" :margin-top "1em"}}
+           "Make sure your code defines a 'decide' function that takes game-state, player-id, method, and params."]])]]]))
 
 ;; Panel routing for simple components
 (defmethod routes/panels :battle-opoly-panel [] [simple-battle-opoly-panel])
