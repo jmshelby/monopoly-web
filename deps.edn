@@ -25,9 +25,6 @@
         ;; Code Editor
         io.github.nextjournal/clojure-mode {:git/sha "d32d56f9b900c1cfe2c501672562200b54a56194"}
 
-        ;; Code Evaluation
-        org.babashka/sci {:mvn/version "0.8.41"}
-
         ;; Development Tools
         binaryage/devtools {:mvn/version "1.0.6"}
         re-frisk/re-frisk {:mvn/version "1.6.0"}
