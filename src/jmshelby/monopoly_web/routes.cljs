@@ -13,7 +13,8 @@
     ["/" {""              :battle-opoly
           "setup"         :setup
           "single-game"   :single-game
-          "bulk-sim"      :bulk-simulation}]))
+          "bulk-sim"      :bulk-simulation
+          "player-lab"    :player-lab}]))
 
 (defn parse
   [url]

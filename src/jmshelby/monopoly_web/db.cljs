@@ -21,6 +21,11 @@
                      :results nil
                      :config {}}
 
+   ;; Player Lab state
+   :player-lab {:code nil  ; Will be initialized from template when panel loads
+                :running? false
+                :results nil}
+
    ;; UI state
    :loading? false
    :error-message nil})

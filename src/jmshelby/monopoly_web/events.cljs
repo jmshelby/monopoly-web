@@ -231,6 +231,22 @@
  (fn [db [_ progress]]
    (assoc-in db [:bulk-simulation :progress] progress)))
 
+;; Player Lab events
+(re-frame/reg-event-db
+ ::set-player-lab-code
+ (fn [db [_ code]]
+   (assoc-in db [:player-lab :code] code)))
+
+(re-frame/reg-event-db
+ ::set-player-lab-running
+ (fn [db [_ running?]]
+   (assoc-in db [:player-lab :running?] running?)))
+
+(re-frame/reg-event-db
+ ::set-player-lab-results
+ (fn [db [_ results]]
+   (assoc-in db [:player-lab :results] results)))
+
 ;; UI state events
 (re-frame/reg-event-db
  ::set-loading
