@@ -1,6 +1,6 @@
 (ns jmshelby.monopoly-web.views-simple
   (:require
-   [cljs.pprint :as cljs.pprint :refer [pprint]]
+   [cljs.pprint :refer [pprint]]
    [re-frame.core :as re-frame]
    [reagent.core :as r]
    [jmshelby.monopoly.simulation.output :as output]
@@ -337,7 +337,7 @@
          [:div {:style {:margin-top "1em"}}
           [:strong "Test Call Result:"] [:br]
           [:pre {:style {:margin-top "0.5em" :font-size "11px"}}
-           (with-out-str (cljs.pprint/pprint (:test-result @results)))]]]
+           (with-out-str (pprint (:test-result @results)))]]]
 
         ;; Show placeholder
         :else
