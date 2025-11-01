@@ -71,3 +71,23 @@
           {:success true
            :player-fn (wrap-player-fn context decide-fn)
            :context context})))))
+
+(defn test-player-fn
+  "Tests a player function with a simple decision to verify it works.
+   Returns a map with :success true/false and :result or :error"
+  [player-fn]
+  (try
+    (let [;; Create a minimal test game state
+          test-game-state {:board {:properties []}
+                          :players [{:id 1 :cash 1500 :status :playing :properties {}}
+                                   {:id 2 :cash 1500 :status :playing :properties {}}
+                                   {:id 3 :cash 1500 :status :playing :properties {}}
+                                   {:id 4 :cash 1500 :status :playing :properties {}}]
+                          :transactions []}
+          ;; Test the take-turn decision
+          result (player-fn test-game-state 1 :take-turn {:actions-available {:roll true}})]
+      (if (and (map? result) (:action result))
+        {:success true :result result}
+        {:success false :error "Player function did not return a valid action map"}))
+    (catch :default e
+      {:success false :error (str "Error testing player function: " (.-message e))})))

@@ -336,6 +336,17 @@
          (and @results (:success @results))
          [:div {:class "code-block"}
           [:p {:style {:color "#66ff66"}} "✅ " (:message @results)]
+
+          ;; Show custom player validation status
+          (when (:custom-player-validated @results)
+            [:div {:style {:margin-top "1em" :padding "0.5em" :background-color "#1a331a" :border-left "3px solid #66ff66"}}
+             [:strong {:style {:color "#66ff66"}} "Custom Player Validation:"] [:br]
+             (str "✓ Code compiled successfully") [:br]
+             (str "✓ 'decide' function found") [:br]
+             (str "✓ Test action returned: " (name (:test-action @results))) [:br]
+             [:span {:style {:color "#ffff66" :font-size "0.9em"}}
+              "Note: Game ran with default players. Custom player integration coming soon!"]])
+
           [:div {:style {:margin-top "1em"}}
            [:strong "Game Results:"] [:br]
            (str "Winner: Player " (:winner @results)) [:br]
