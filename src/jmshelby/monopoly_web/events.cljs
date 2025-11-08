@@ -241,3 +241,67 @@
  ::set-error
  (fn [db [_ error-message]]
    (assoc db :error-message error-message)))
+
+;; Player Lab events
+(re-frame/reg-event-db
+ ::set-player-lab-code
+ (fn [db [_ code]]
+   (assoc-in db [:player-lab :code] code)))
+
+(re-frame/reg-event-fx
+ ::run-player-lab-simulation
+ (fn [{:keys [db]} [_ code]]
+   (let [num-games 100  ;; Default to 100 games for now
+         player-count 4] ;; Default to 4 players
+
+     ;; Store the code and start simulation
+     {;; Reset the various status attributes
+      :db (-> db
+              (assoc-in [:player-lab :code] code)
+              (assoc-in [:player-lab :start-time] (time/now))
+              (assoc-in [:player-lab :running?] true)
+              (assoc-in [:player-lab :progress] 0)
+              (assoc-in [:player-lab :total-games] num-games)
+              (assoc-in [:player-lab :results] []))
+      ;; For now, start a standard simulation
+      ;; TODO: Actually use the custom player code
+      :monopoly/simulation {:num-games num-games
+                            :num-players player-count}})))
+
+(re-frame/reg-event-db
+ ::set-player-lab-running
+ (fn [db [_ running?]]
+   (assoc-in db [:player-lab :running?] running?)))
+
+(re-frame/reg-event-db
+ ::player-lab-started
+ (fn [db [_ output-ch]]
+   (assoc-in db [:player-lab :output-chan] output-ch)))
+
+(re-frame/reg-event-fx
+ ::player-lab-game-finished
+ (fn [{:keys [db]} [_ game]]
+   (let [start-time (get-in db [:player-lab :start-time])
+         duration-ms (time/elapsed-ms start-time
+                                      (time/now))
+         output-ch (get-in db [:player-lab :output-chan])
+         total-games (get-in db [:player-lab :total-games])
+         prev-results (get-in db [:player-lab :results])
+         new-results (conj prev-results game)
+         new-stats (core-sim/calculate-statistics new-results
+                                                  (count new-results)
+                                                  duration-ms)
+         more-games? (not= total-games (count new-results))]
+
+     (merge
+      {:db (-> db
+              ;; Recalc new stats with this additional game
+               (assoc-in [:player-lab :stats] new-stats)
+              ;; Keep that game's results
+               (assoc-in [:player-lab :results] new-results)
+              ;; Update progress counter
+               (assoc-in [:player-lab :progress] (count new-results))
+               (assoc-in [:player-lab :running?] more-games?))}
+      ;; If there are more games needed, we need to invoke an fx for that
+      (when more-games?
+        [:monopoly/simulation-continue output-ch])))))

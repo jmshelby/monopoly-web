@@ -20,7 +20,7 @@
 
 ;; CodeMirror 6 editor component using nextjournal pattern
 (defn clojure-editor [props]
-  (r/with-let [!view (r/atom nil)
+  (r/with-let [!view (or (:view-atom props) (r/atom nil))
                mount! (fn [el]
                         (when el
                           (let [initial-value (or (:value props) "")
@@ -32,13 +32,13 @@
                                                 cm/default-extensions
                                                 (.of keymap cm/complete-keymap)
                                                 (.of keymap historyKeymap)]
-                                state (.create EditorState 
-                                               #js {:doc initial-value 
+                                state (.create EditorState
+                                               #js {:doc initial-value
                                                     :extensions extensions})
                                 view (new EditorView #js {:state state :parent el})]
                             (reset! !view view))))]
     [:div.player-lab-textarea {:ref mount!}]
-    
+
     (finally
       (when @!view
         (.destroy @!view)))))
@@ -282,29 +282,62 @@
          ]])]))
 
 (defn simple-player-lab-panel []
-  [:div.player-lab-container
-   ;; Left Panel: Code Editor
-   [:div.player-lab-left-panel
-    [:div.player-lab-header
-     [:h3 "Player Logic Editor"]
-     [:div.player-lab-buttons
-      [:button.btn-secondary
-       {:on-click #(re-frame/dispatch [::events/navigate :battle-opoly])}
-       "← Back"]
-      [:button.btn-success
-       "Run Simulation"]]]
-    
-    ;; Code Editor Area
-    [:div.player-lab-editor-area
-     [:h4 "Code:"]
-     [clojure-editor {:value templates/dumb-player-template}]]]
-   
-   ;; Right Panel: Stats/Results
-   [:div.player-lab-right-panel
-    [:h3 "Simulation Results"]
-    [:div.player-lab-placeholder
-     [:p "This is where stats would be"]
-     [:p "Simulation results and player performance metrics will appear here after running the code."]]]])
+  (let [running? (re-frame/subscribe [::subs/player-lab-running?])
+        progress (re-frame/subscribe [::subs/player-lab-progress])
+        total-games (re-frame/subscribe [::subs/player-lab-total])
+        stats (re-frame/subscribe [::subs/player-lab-stats])]
+    (r/with-let [!editor-view (r/atom nil)
+                 get-editor-content (fn []
+                                     (when-let [view @!editor-view]
+                                       (-> view .-state .-doc .toString)))
+                 run-simulation (fn []
+                                  (when-let [code (get-editor-content)]
+                                    (re-frame/dispatch [::events/run-player-lab-simulation code])))]
+      [:div.player-lab-container
+       ;; Left Panel: Code Editor
+       [:div.player-lab-left-panel
+        [:div.player-lab-header
+         [:h3 "Player Logic Editor"]
+         [:div.player-lab-buttons
+          [:button.btn-secondary
+           {:on-click #(re-frame/dispatch [::events/navigate :battle-opoly])}
+           "← Back"]
+          [:button.btn-success
+           {:on-click run-simulation
+            :disabled @running?}
+           (if @running? "Running..." "Run Simulation")]]]
+
+        ;; Code Editor Area
+        [:div.player-lab-editor-area
+         [:h4 "Code:"]
+         [clojure-editor {:value templates/dumb-player-template
+                         :view-atom !editor-view}]]]
+
+       ;; Right Panel: Stats/Results
+       [:div.player-lab-right-panel
+        [:h3 "Simulation Results"]
+
+        ;; Progress section
+        (when @running?
+          [:div {:style {:margin-bottom "2em"}}
+           [:h4 "Progress"]
+           [:div {:style {:background-color "#e9ecef" :height "20px" :border-radius "10px" :overflow "hidden"}}
+            [:div {:style {:background-color "#007bff"
+                           :height "100%"
+                           :width (str (if (and @progress @total-games (> @total-games 0))
+                                         (* 100 (/ @progress @total-games))
+                                         0) "%")
+                           :transition "width 0.3s ease"}}]]
+           [:p (str "Completed " (or @progress 0) " / " (or @total-games 0) " games")]])
+
+        ;; Results section
+        (if @stats
+          [:div.player-lab-results
+           [:div {:class "code-block" :style {:font-size "12px"}}
+            (with-out-str
+              (output/print-simulation-results @stats))]]
+          [:div.player-lab-placeholder
+           [:p "Simulation results will appear here after running the code."]])]])))
 
 ;; Panel routing for simple components
 (defmethod routes/panels :battle-opoly-panel [] [simple-battle-opoly-panel])

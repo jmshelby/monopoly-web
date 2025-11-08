@@ -80,3 +80,34 @@
  ::error-message
  (fn [db _]
    (:error-message db)))
+
+;; Player Lab subscriptions
+(re-frame/reg-sub
+ ::player-lab-code
+ (fn [db _]
+   (get-in db [:player-lab :code])))
+
+(re-frame/reg-sub
+ ::player-lab-running?
+ (fn [db _]
+   (get-in db [:player-lab :running?])))
+
+(re-frame/reg-sub
+ ::player-lab-progress
+ (fn [db _]
+   (get-in db [:player-lab :progress])))
+
+(re-frame/reg-sub
+ ::player-lab-total
+ (fn [db _]
+   (get-in db [:player-lab :total-games])))
+
+(re-frame/reg-sub
+ ::player-lab-results
+ (fn [db _]
+   (get-in db [:player-lab :results])))
+
+(re-frame/reg-sub
+ ::player-lab-stats
+ (fn [db _]
+   (get-in db [:player-lab :stats])))
