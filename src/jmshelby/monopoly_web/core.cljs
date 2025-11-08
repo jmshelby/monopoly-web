@@ -21,34 +21,33 @@
     (rdom/render [views/simple-main-panel] root-el)))
 
 (defn- wait-for-next-game
-  [chan]
+  [chan completion-event]
   (async/go
     (when-let [game (async/<! chan)]
       (println "new game ready, dispatching ...")
-      (re-frame/dispatch [:jmshelby.monopoly-web.events/bulk-sim-game-finished
-                          game])
+      (re-frame/dispatch [completion-event game])
       (println "new game ready, dispatching ...continuing"))))
 
 ;; An event to start a bulk simulation of monopoly games
 (re-frame/reg-fx
  :monopoly/simulation
- (fn [{:keys [num-games num-players safety-threshold]}]
+ (fn [{:keys [num-games num-players safety-threshold started-event completion-event]}]
    (let [num-players (or num-players 4)
          safety-threshold (or safety-threshold 1000)
          output-ch (core-sim/run-simulation num-games
                                             num-players
                                             safety-threshold)]
      ;; Dispatch to save the channel
-     (re-frame/dispatch [:jmshelby.monopoly-web.events/bulk-sim-started
-                         output-ch])
+     (when started-event
+       (re-frame/dispatch [started-event output-ch]))
      ;; Prime the compute cycle with the first game
-     (wait-for-next-game output-ch))))
+     (wait-for-next-game output-ch completion-event))))
 
 (re-frame/reg-fx
  :monopoly/simulation-continue
- (fn [output-ch]
+ (fn [{:keys [output-ch completion-event]}]
    ;; Just another take and dispatch when ready
-   (wait-for-next-game output-ch)))
+   (wait-for-next-game output-ch completion-event)))
 
 (re-frame/reg-fx
  :monopoly/simulation-stop

@@ -181,7 +181,9 @@
               (assoc-in [:bulk-simulation :results] []))
       ;; Start up a bulk monopoly simulation run
       :monopoly/simulation {:num-games num-games
-                            :num-players player-count}})))
+                            :num-players player-count
+                            :started-event ::bulk-sim-started
+                            :completion-event ::bulk-sim-game-finished}})))
 
 (re-frame/reg-event-fx
  ::stop-bulk-simulation
@@ -223,7 +225,8 @@
                (assoc-in [:bulk-simulation :running?] more-games?))}
       ;; If there are more games needed, we need to invoke an fx for that
       (when more-games?
-        [:monopoly/simulation-continue output-ch])))))
+        {:monopoly/simulation-continue {:output-ch output-ch
+                                        :completion-event ::bulk-sim-game-finished}})))))
 
 
 (re-frame/reg-event-db
@@ -266,7 +269,9 @@
       ;; For now, start a standard simulation
       ;; TODO: Actually use the custom player code
       :monopoly/simulation {:num-games num-games
-                            :num-players player-count}})))
+                            :num-players player-count
+                            :started-event ::player-lab-started
+                            :completion-event ::player-lab-game-finished}})))
 
 (re-frame/reg-event-db
  ::set-player-lab-running
@@ -304,4 +309,5 @@
                (assoc-in [:player-lab :running?] more-games?))}
       ;; If there are more games needed, we need to invoke an fx for that
       (when more-games?
-        [:monopoly/simulation-continue output-ch])))))
+        {:monopoly/simulation-continue {:output-ch output-ch
+                                        :completion-event ::player-lab-game-finished}})))))
