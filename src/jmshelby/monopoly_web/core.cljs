@@ -8,7 +8,8 @@
    [jmshelby.monopoly-web.views-simple :as views]
    [jmshelby.monopoly-web.config :as config]
    [jmshelby.monopoly-web.styles :as styles]
-   [jmshelby.monopoly.simulation :as core-sim]))
+   [jmshelby.monopoly.simulation :as core-sim]
+   [jmshelby.monopoly-web.player-eval :as player-eval]))
 
 (defn dev-setup []
   (when config/debug?
@@ -55,6 +56,44 @@
    ;; Close the channel, and games can't continue
    (println "closed channel!")
    (async/close! output-ch)))
+
+;; Custom player simulation effect
+(re-frame/reg-fx
+ :monopoly/custom-player-simulation
+ (fn [{:keys [num-games num-players safety-threshold player-code started-event completion-event]}]
+   (let [num-players (or num-players 4)
+         safety-threshold (or safety-threshold 1000)]
+     (println "Starting custom player simulation with code...")
+
+     ;; Try to evaluate the player code
+     (if-let [player-fn (player-eval/create-player-fn player-code)]
+       (do
+         (println "Player code evaluated successfully")
+         ;; Create a channel for results
+         (let [output-ch (async/chan)]
+           ;; Dispatch started event
+           (when started-event
+             (re-frame/dispatch [started-event output-ch]))
+
+           ;; Run games asynchronously
+           (async/go
+             (dotimes [i num-games]
+               (try
+                 (println "Running game" (inc i) "of" num-games)
+                 (let [game-state (player-eval/run-custom-game player-fn num-players safety-threshold)
+                       analysis (core-sim/analyze-game-outcome game-state)]
+                   (async/>! output-ch analysis)
+                   ;; Dispatch completion event for this game
+                   (re-frame/dispatch [completion-event analysis]))
+                 (catch :default e
+                   (js/console.error "Error running custom game:" e))))
+             (async/close! output-ch))))
+       ;; If evaluation failed, dispatch error
+       (do
+         (println "Failed to evaluate player code")
+         (re-frame/dispatch [:jmshelby.monopoly-web.events/set-error
+                             "Failed to evaluate player code. Check console for errors."])
+         (re-frame/dispatch [:jmshelby.monopoly-web.events/set-player-lab-running false]))))))
 
 (defn init []
   (try
