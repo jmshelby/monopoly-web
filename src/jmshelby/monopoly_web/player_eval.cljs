@@ -26,7 +26,8 @@
                                                    'other-players util/other-players
                                                    'current-player util/current-player
                                                    'has-bail-card? util/has-bail-card?}}
-             :classes {'js goog/global :allow :all}}))
+             :classes {'js goog/global :allow :all}
+             :bindings {'*ns* (sci/create-ns 'user nil)}}))
 
 ;; Evaluate player code and extract the decide function
 (defn eval-player-code
@@ -34,15 +35,39 @@
    Returns nil if evaluation fails or decide function is not found."
   [code-str]
   (try
-    (let [ctx (create-sci-context)
-          ;; Evaluate the code in the SCI context
-          _ (sci/eval-string* ctx code-str)
-          ;; Try to get the decide function from the context
-          decide-fn (sci/eval-string* ctx "decide")]
-      (when (fn? decide-fn)
-        decide-fn))
+    (let [ctx (create-sci-context)]
+      (js/console.log "Evaluating player code...")
+      (try
+        ;; Evaluate the code in the SCI context
+        (sci/eval-string* ctx code-str)
+        (js/console.log "Code evaluated successfully")
+        (catch :default e
+          (js/console.error "Error during code evaluation:" e)
+          (js/console.error "Error message:" (ex-message e))
+          (throw e)))
+
+      ;; Try to get the decide function from the namespace
+      (let [decide-fn (try
+                        ;; First try from the declared namespace
+                        (sci/eval-string* ctx "my-custom-player/decide")
+                        (catch :default e1
+                          (js/console.log "Couldn't find my-custom-player/decide, trying decide...")
+                          (try
+                            ;; If that fails, try without namespace qualification
+                            (sci/eval-string* ctx "decide")
+                            (catch :default e2
+                              (js/console.error "Couldn't find decide function:" e2)
+                              nil))))]
+        (if (fn? decide-fn)
+          (do
+            (js/console.log "Successfully extracted decide function")
+            decide-fn)
+          (do
+            (js/console.error "decide is not a function:" (type decide-fn))
+            nil))))
     (catch :default e
       (js/console.error "Error evaluating player code:" e)
+      (js/console.error "Error details:" (ex-message e))
       nil)))
 
 ;; Wrapper to make the evaluated decide function compatible with the game engine
