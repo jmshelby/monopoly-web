@@ -33,7 +33,10 @@
                             'jmshelby.monopoly.util util-fns
                             'util util-fns  ;; Add alias
                             'clojure.core {'ex-info ex-info
-                                          'ex-message ex-message}}
+                                          'ex-message ex-message
+                                          'type type
+                                          'str str
+                                          'int int}}
                :classes {'js goog/global :allow :all}
                :bindings {'*ns* (sci/create-ns 'user nil)}})))
 
