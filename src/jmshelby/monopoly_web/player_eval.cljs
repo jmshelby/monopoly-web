@@ -61,6 +61,7 @@
           code-without-ns (strip-ns-form code-str)]
       (js/console.log "Evaluating player code...")
       (js/console.log "Code length:" (count code-without-ns))
+      (js/console.log "First 200 chars of stripped code:" (subs code-without-ns 0 (min 200 (count code-without-ns))))
       (try
         ;; Evaluate the code in the SCI context
         (sci/eval-string* ctx code-without-ns)
