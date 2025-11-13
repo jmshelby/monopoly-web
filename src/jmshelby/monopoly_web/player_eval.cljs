@@ -31,7 +31,9 @@
     (sci/init {:namespaces {'clojure.set set-fns
                             'set set-fns  ;; Add alias
                             'jmshelby.monopoly.util util-fns
-                            'util util-fns}  ;; Add alias
+                            'util util-fns  ;; Add alias
+                            'clojure.core {'ex-info ex-info
+                                          'ex-message ex-message}}
                :classes {'js goog/global :allow :all}
                :bindings {'*ns* (sci/create-ns 'user nil)}})))
 
@@ -69,6 +71,8 @@
         (catch :default e
           (js/console.error "Error during code evaluation:" e)
           (js/console.error "Error message:" (ex-message e))
+          (when (.-data e)
+            (js/console.error "Error data:" (js/JSON.stringify (.-data e) nil 2)))
           (throw e)))
 
       ;; Try to get the decide function from the context
