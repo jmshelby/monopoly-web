@@ -12,23 +12,28 @@
 
 ;; Create a SCI context with the namespaces needed by player code
 (defn create-sci-context []
-  (sci/init {:namespaces {'clojure.set {'difference set/difference
-                                        'union set/union
-                                        'intersection set/intersection}
-                          'jmshelby.monopoly.util {'player-by-id util/player-by-id
-                                                   'owned-properties util/owned-properties
-                                                   'owned-property-details util/owned-property-details
-                                                   'street-group-counts util/street-group-counts
-                                                   'potential-house-purchases util/potential-house-purchases
-                                                   ;; Add more utility functions needed by player code
-                                                   'half util/half
-                                                   'rcompare util/rcompare
-                                                   'sum util/sum
-                                                   'other-players util/other-players
-                                                   'current-player util/current-player
-                                                   'has-bail-card? util/has-bail-card?}}
-             :classes {'js goog/global :allow :all}
-             :bindings {'*ns* (sci/create-ns 'user nil)}}))
+  (let [;; Define the utility functions map once
+        util-fns {'player-by-id util/player-by-id
+                  'owned-properties util/owned-properties
+                  'owned-property-details util/owned-property-details
+                  'street-group-counts util/street-group-counts
+                  'potential-house-purchases util/potential-house-purchases
+                  'half util/half
+                  'rcompare util/rcompare
+                  'sum util/sum
+                  'other-players util/other-players
+                  'current-player util/current-player
+                  'has-bail-card? util/has-bail-card?}
+        ;; Define the set functions map once
+        set-fns {'difference set/difference
+                 'union set/union
+                 'intersection set/intersection}]
+    (sci/init {:namespaces {'clojure.set set-fns
+                            'set set-fns  ;; Add alias
+                            'jmshelby.monopoly.util util-fns
+                            'util util-fns}  ;; Add alias
+               :classes {'js goog/global :allow :all}
+               :bindings {'*ns* (sci/create-ns 'user nil)}})))
 
 (defn- strip-ns-form
   "Remove the ns form from the code string since we provide namespaces via SCI context.
