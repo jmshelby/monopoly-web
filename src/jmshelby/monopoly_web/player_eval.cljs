@@ -2,6 +2,7 @@
   (:require
    [sci.core :as sci]
    [clojure.set :as set]
+   [clojure.string]
    [jmshelby.monopoly.util :as util]
    [jmshelby.monopoly.core :as core]
    [jmshelby.monopoly.definitions :as defs]
@@ -29,35 +30,47 @@
              :classes {'js goog/global :allow :all}
              :bindings {'*ns* (sci/create-ns 'user nil)}}))
 
+(defn- strip-ns-form
+  "Remove the ns form from the code string since we provide namespaces via SCI context.
+   This is a simple heuristic that removes everything from (ns to the first line that starts with (def"
+  [code-str]
+  (let [;; Find the first (defn, (defn-, (def, etc after the ns form
+        first-def-idx (or (clojure.string/index-of code-str "\n(def")
+                          ;; If no newline before def, try without newline
+                          (clojure.string/index-of code-str "(def"))
+        ;; If we found a def, take everything from there onwards
+        result (if first-def-idx
+                 (subs code-str first-def-idx)
+                 ;; Otherwise just try removing the ns form with a simple regex
+                 (clojure.string/replace code-str #"(?s)^\s*\(ns\s+.*?\n\n" ""))]
+    (clojure.string/trim result)))
+
 ;; Evaluate player code and extract the decide function
 (defn eval-player-code
   "Evaluates the player code string and returns the decide function.
    Returns nil if evaluation fails or decide function is not found."
   [code-str]
   (try
-    (let [ctx (create-sci-context)]
+    (let [ctx (create-sci-context)
+          ;; Strip ns form since we provide namespaces manually
+          code-without-ns (strip-ns-form code-str)]
       (js/console.log "Evaluating player code...")
+      (js/console.log "Code length:" (count code-without-ns))
       (try
         ;; Evaluate the code in the SCI context
-        (sci/eval-string* ctx code-str)
+        (sci/eval-string* ctx code-without-ns)
         (js/console.log "Code evaluated successfully")
         (catch :default e
           (js/console.error "Error during code evaluation:" e)
           (js/console.error "Error message:" (ex-message e))
           (throw e)))
 
-      ;; Try to get the decide function from the namespace
+      ;; Try to get the decide function from the context
       (let [decide-fn (try
-                        ;; First try from the declared namespace
-                        (sci/eval-string* ctx "my-custom-player/decide")
-                        (catch :default e1
-                          (js/console.log "Couldn't find my-custom-player/decide, trying decide...")
-                          (try
-                            ;; If that fails, try without namespace qualification
-                            (sci/eval-string* ctx "decide")
-                            (catch :default e2
-                              (js/console.error "Couldn't find decide function:" e2)
-                              nil))))]
+                        (sci/eval-string* ctx "decide")
+                        (catch :default e
+                          (js/console.error "Couldn't find decide function:" e)
+                          nil))]
         (if (fn? decide-fn)
           (do
             (js/console.log "Successfully extracted decide function")
