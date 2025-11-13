@@ -70,7 +70,19 @@
           (js/console.error "Error during code evaluation:" e)
           (js/console.error "Error message:" (ex-message e))
           (when (.-data e)
-            (js/console.error "Error data:" (js/JSON.stringify (.-data e) nil 2)))
+            (let [data (.-data e)]
+              (js/console.error "Error data full:" data)
+              (when (.-line data)
+                (js/console.error "Error at line:" (.-line data) "column:" (.-column data)))
+              (when (.-line data)
+                ;; Show the line where the error occurred
+                (let [lines (clojure.string/split-lines code-without-ns)
+                      error-line (dec (.-line data))
+                      context-start (max 0 (- error-line 2))
+                      context-end (min (count lines) (+ error-line 3))]
+                  (js/console.error "Code context:")
+                  (doseq [i (range context-start context-end)]
+                    (js/console.error (str (inc i) ": " (nth lines i))))))))
           (throw e)))
 
       ;; Try to get the decide function from the context
