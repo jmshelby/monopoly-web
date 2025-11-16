@@ -69,20 +69,14 @@
         (catch :default e
           (js/console.error "Error during code evaluation:" e)
           (js/console.error "Error message:" (ex-message e))
+          (js/console.error "Error type:" (type e))
+          (js/console.error "Error keys:" (js/Object.keys e))
           (when (.-data e)
             (let [data (.-data e)]
-              (js/console.error "Error data full:" data)
-              (when (.-line data)
-                (js/console.error "Error at line:" (.-line data) "column:" (.-column data)))
-              (when (.-line data)
-                ;; Show the line where the error occurred
-                (let [lines (clojure.string/split-lines code-without-ns)
-                      error-line (dec (.-line data))
-                      context-start (max 0 (- error-line 2))
-                      context-end (min (count lines) (+ error-line 3))]
-                  (js/console.error "Code context:")
-                  (doseq [i (range context-start context-end)]
-                    (js/console.error (str (inc i) ": " (nth lines i))))))))
+              (js/console.error "Error data:" data)
+              (js/console.error "Error data type:" (type data))
+              (js/console.error "Error data keys:" (js/Object.keys data))
+              (js/console.error "Error data as JSON:" (js/JSON.stringify data nil 2))))
           (throw e)))
 
       ;; Try to get the decide function from the context
