@@ -70,6 +70,22 @@
  (fn [db _]
    (get-in db [:bulk-simulation :config :games])))
 
+;; Player Lab subscriptions
+(re-frame/reg-sub
+ ::player-lab-code
+ (fn [db _]
+   (get-in db [:player-lab :code])))
+
+(re-frame/reg-sub
+ ::player-lab-running?
+ (fn [db _]
+   (get-in db [:player-lab :running?])))
+
+(re-frame/reg-sub
+ ::player-lab-results
+ (fn [db _]
+   (get-in db [:player-lab :results])))
+
 ;; UI state subscriptions
 (re-frame/reg-sub
  ::loading?

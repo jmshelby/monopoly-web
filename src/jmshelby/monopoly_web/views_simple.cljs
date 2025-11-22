@@ -2,11 +2,19 @@
   (:require
    [cljs.pprint :refer [pprint]]
    [re-frame.core :as re-frame]
+   [reagent.core :as r]
    [jmshelby.monopoly.simulation.output :as output]
    [jmshelby.monopoly-web.events :as events]
    [jmshelby.monopoly-web.routes :as routes]
    [jmshelby.monopoly-web.subs :as subs]
-   [jmshelby.monopoly.analysis :as analysis]))
+   [jmshelby.monopoly.analysis :as analysis]
+   ["@codemirror/state" :refer [EditorState]]
+   ["@codemirror/view" :refer [EditorView lineNumbers keymap highlightActiveLine]]
+   ["@codemirror/commands" :refer [history historyKeymap]]
+   ["@codemirror/language" :refer [bracketMatching]]
+   ["@codemirror/theme-one-dark" :refer [oneDark]]
+   [nextjournal.clojure-mode :as cm]
+   [jmshelby.monopoly-web.player-templates :as templates]))
 
 ;; Simple HTML-based components without re-com
 (defn simple-battle-opoly-panel []
@@ -24,7 +32,11 @@
               :on-click #(do
                           (re-frame/dispatch [::events/set-game-mode :bulk])
                           (re-frame/dispatch [::events/navigate :setup]))}
-     "Run lots of games w/stats"]]])
+     "Run lots of games w/stats"]
+    [:button {:class "btn-info"
+              :style {:display "block" :margin "1em auto"}
+              :on-click #(re-frame/dispatch [::events/navigate :player-lab])}
+     "Player Lab"]]])
 
 (defn simple-setup-panel []
   (let [mode (re-frame/subscribe [::subs/game-mode])]
@@ -242,11 +254,124 @@
          ;
          ]])]))
 
+;; CodeMirror 6 editor component with state management
+(defn clojure-editor [props]
+  (let [on-change (:on-change props)]
+    (r/with-let [!view (r/atom nil)
+                 mount! (fn [el]
+                          (when el
+                            (let [initial-value (or (:value props) "")
+                                  ;; Create update listener extension
+                                  update-listener (.of (.-updateListener EditorView)
+                                                       (fn [view-update]
+                                                         (when (.-docChanged view-update)
+                                                           (let [new-value (.. view-update -state -doc toString)]
+                                                             (when on-change
+                                                               (on-change new-value))))))
+                                  extensions #js [oneDark
+                                                  (history)
+                                                  (lineNumbers)
+                                                  (highlightActiveLine)
+                                                  (bracketMatching)
+                                                  cm/default-extensions
+                                                  (.of keymap cm/complete-keymap)
+                                                  (.of keymap historyKeymap)
+                                                  update-listener]
+                                  state (.create EditorState
+                                                 #js {:doc initial-value
+                                                      :extensions extensions})
+                                  view (new EditorView #js {:state state :parent el})]
+                              (reset! !view view))))]
+      [:div.player-lab-textarea {:ref mount!}]
+
+      (finally
+        (when @!view
+          (.destroy @!view))))))
+
+(defn simple-player-lab-panel []
+  (let [code (re-frame/subscribe [::subs/player-lab-code])
+        running? (re-frame/subscribe [::subs/player-lab-running?])
+        results (re-frame/subscribe [::subs/player-lab-results])]
+
+    ;; Initialize code from template if not set
+    (when-not @code
+      (re-frame/dispatch [::events/set-player-lab-code templates/dumb-player-template]))
+
+    [:div.player-lab-container
+     ;; Left Panel: Code Editor
+     [:div.player-lab-left-panel
+      [:div.player-lab-header
+       [:h3 "Player Logic Editor"]
+       [:div.player-lab-buttons
+        [:button.btn-secondary
+         {:on-click #(re-frame/dispatch [::events/navigate :battle-opoly])}
+         "← Back"]
+        [:button.btn-success
+         {:disabled @running?
+          :on-click #(re-frame/dispatch [::events/run-player-lab-simulation])}
+         (if @running? "Running..." "Run Simulation")]]]
+
+      ;; Code Editor Area
+      [:div.player-lab-editor-area
+       [:h4 "Code:"]
+       [clojure-editor {:value (or @code templates/dumb-player-template)
+                        :on-change #(re-frame/dispatch [::events/set-player-lab-code %])}]]]
+
+     ;; Right Panel: Stats/Results
+     [:div.player-lab-right-panel
+      [:h3 "Simulation Results"]
+      [:div.player-lab-placeholder
+       (cond
+         @running?
+         [:div
+          [:p {:style {:color "#ffff66"}} "⏳ Running simulation..."]
+          [:p "Evaluating your player code and running a test game."]]
+
+         (and @results (:error @results))
+         [:div
+          [:p {:style {:color "#ff6666"}} "❌ Error"]
+          [:pre {:style {:color "#ff6666" :white-space "pre-wrap"}}
+           (:error @results)]]
+
+         (and @results (:success @results))
+         [:div {:class "code-block"}
+          [:p {:style {:color "#66ff66"}} "✅ " (:message @results)]
+
+          ;; Show custom player validation status
+          (when (:custom-player-validated @results)
+            [:div {:style {:margin-top "1em" :padding "0.5em" :background-color "#1a331a" :border-left "3px solid #66ff66"}}
+             [:strong {:style {:color "#66ff66"}} "Custom Player Validation:"] [:br]
+             (str "✓ Code compiled successfully") [:br]
+             (str "✓ 'decide' function found") [:br]
+             (str "✓ Test action returned: " (name (:test-action @results))) [:br]
+             [:span {:style {:color "#ffff66" :font-size "0.9em"}}
+              "Note: Game ran with default players. Custom player integration coming soon!"]])
+
+          [:div {:style {:margin-top "1em"}}
+           [:strong "Game Results:"] [:br]
+           (str "Winner: Player " (:winner @results)) [:br]
+           (str "Total Transactions: " (:transactions @results)) [:br]]
+          (when-let [game-state (:game-state @results)]
+            [:div {:style {:margin-top "1em"}}
+             [:strong "Players:"] [:br]
+             (for [player (:players game-state)]
+               [:div {:key (:id player)}
+                (str "  Player " (:id player) ": "
+                     (name (:status player)) ", $" (:cash player)) [:br]])])]
+
+         :else
+         [:div
+          [:p "Click 'Run Simulation' to test your player code."]
+          [:p "Your code will be evaluated and used to run a Monopoly game simulation."]
+          [:p {:style {:color "#666666" :font-size "0.9em" :margin-top "1em"}}
+           "Make sure your code defines a 'decide' function that takes game-state, player-id, method, and params."]])]]]))
+
 ;; Panel routing for simple components
 (defmethod routes/panels :battle-opoly-panel [] [simple-battle-opoly-panel])
 (defmethod routes/panels :setup-panel [] [simple-setup-panel])
 (defmethod routes/panels :single-game-panel [] [simple-single-game-panel])
 (defmethod routes/panels :bulk-simulation-panel [] [simple-bulk-simulation-panel])
+(defmethod routes/panels :player-lab-panel [] [simple-player-lab-panel])
 
 ;; Simple main panel
 (defn simple-main-panel []

@@ -5,7 +5,8 @@
    [jmshelby.monopoly-web.db :as db]
    [jmshelby.monopoly.util.time :as time]
    [jmshelby.monopoly.core :as monopoly-core]
-   [jmshelby.monopoly.simulation :as core-sim]))
+   [jmshelby.monopoly.simulation :as core-sim]
+   [jmshelby.monopoly-web.player-eval :as player-eval]))
 
 (re-frame/reg-event-db
  ::initialize-db
@@ -230,6 +231,82 @@
  ::set-bulk-sim-progress
  (fn [db [_ progress]]
    (assoc-in db [:bulk-simulation :progress] progress)))
+
+;; Player Lab events
+(re-frame/reg-event-db
+ ::set-player-lab-code
+ (fn [db [_ code]]
+   (assoc-in db [:player-lab :code] code)))
+
+(re-frame/reg-event-db
+ ::set-player-lab-running
+ (fn [db [_ running?]]
+   (assoc-in db [:player-lab :running?] running?)))
+
+(re-frame/reg-event-db
+ ::set-player-lab-results
+ (fn [db [_ results]]
+   (assoc-in db [:player-lab :results] results)))
+
+(re-frame/reg-event-db
+ ::run-player-lab-simulation
+ (fn [db _]
+   (let [code (get-in db [:player-lab :code])]
+     (if-not code
+       (do
+         (js/console.error "No player code to evaluate")
+         (assoc-in db [:player-lab :results] {:error "No player code to evaluate"}))
+       (do
+         ;; Set running state
+         (js/setTimeout
+          (fn []
+            (try
+              ;; Evaluate player code
+              (let [{:keys [success player-fn error]} (player-eval/create-player-from-code code)]
+                (if-not success
+                  (do
+                    (js/console.error "Player code evaluation failed:" error)
+                    (re-frame/dispatch [::set-player-lab-results {:error error}])
+                    (re-frame/dispatch [::set-player-lab-running false]))
+                  (do
+                    (js/console.log "Player code evaluated successfully!")
+                    ;; Test the custom player function
+                    (let [{test-success :success test-result :result test-error :error}
+                          (player-eval/test-player-fn player-fn)]
+                      (if-not test-success
+                        (do
+                          (js/console.error "Player function test failed:" test-error)
+                          (re-frame/dispatch [::set-player-lab-results {:error test-error}])
+                          (re-frame/dispatch [::set-player-lab-running false]))
+                        (do
+                          (js/console.log "Player function test passed! Result:" test-result)
+                          ;; Run a test game
+                          ;; TODO: Integrate custom player-fn into game once we have the API
+                          ;; For now, run with default players but show custom player validated
+                          (let [game-result (monopoly-core/rand-game-end-state 4)
+                                winner-id (when (= 1 (->> (:players game-result)
+                                                          (filter #(= :playing (:status %)))
+                                                          count))
+                                            (->> (:players game-result)
+                                                 (filter #(= :playing (:status %)))
+                                                 first
+                                                 :id))
+                                results {:success true
+                                        :winner winner-id
+                                        :transactions (count (:transactions game-result))
+                                        :game-state game-result
+                                        :custom-player-validated true
+                                        :test-action (:action test-result)
+                                        :message "✓ Custom player code validated and tested successfully!"}]
+                            (js/console.log "Game result:" results)
+                            (re-frame/dispatch [::set-player-lab-results results])
+                            (re-frame/dispatch [::set-player-lab-running false])))))))))
+              (catch :default e
+                (js/console.error "Error running simulation:" (.-message e))
+                (re-frame/dispatch [::set-player-lab-results {:error (str "Simulation error: " (.-message e))}])
+                (re-frame/dispatch [::set-player-lab-running false]))))
+          100)
+         (assoc-in db [:player-lab :running?] true))))))
 
 ;; UI state events
 (re-frame/reg-event-db
