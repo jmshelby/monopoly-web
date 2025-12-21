@@ -22,9 +22,9 @@
     (/ owned total)))
 
 (defn trade-side-value
-  \\\"Given a game board, player, and resources from one
+  \"Given a game board, player, and resources from one
   side of a trade proposal, return the total \\\"real\\\"
-  value of all resources.\\\"
+  value of all resources.\"
   [board player resources]
   (letfn [(prop-def [id]
             (->> board :properties
@@ -52,10 +52,10 @@
          (apply +))))
 
 (defn proposal-benefit
-  \\\"Given a game-state and proposal map, return the ratio
+  \"Given a game-state and proposal map, return the ratio
   benefit/gain based on value of resources. Mortgaged
   properties are worth half (although we should probably
-  subtract 10% for real value).\\\"
+  subtract 10% for real value).\"
   [game-state proposal]
   (let [board       (:board game-state)
         asking      (:trade/asking proposal)
@@ -150,8 +150,8 @@
                  []))))
 
 (defn proposal?
-  \\\"Given a game-state and player, return the best current
-  proposal available, _if_ it's a smart time to propose one.\\\"
+  \"Given a game-state and player, return the best current
+  proposal available, _if_ it's a smart time to propose one.\"
   ;; Street Properties:
   ;; - If we own 50% or more of a street group (but not all),
   ;;   AND someone else owns a property of the same street...
