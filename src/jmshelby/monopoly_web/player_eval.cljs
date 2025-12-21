@@ -66,10 +66,22 @@
       (js/console.log "=== FULL STRIPPED CODE ===")
       (js/console.log code-without-ns)
       (js/console.log "=== END FULL CODE ===")
-      ;; Search for "Player" in the code
-      (let [player-idx (clojure.string/index-of code-without-ns "Player")]
-        (if player-idx
-          (js/console.warn "Found 'Player' at index:" player-idx)
+      ;; Search for ALL occurrences of "Player" in the code
+      (let [all-player-indices (loop [idx 0
+                                       indices []]
+                                  (if-let [found-idx (clojure.string/index-of code-without-ns "Player" idx)]
+                                    (recur (inc found-idx) (conj indices found-idx))
+                                    indices))]
+        (if (seq all-player-indices)
+          (do
+            (js/console.warn "Found" (count all-player-indices) "'Player' occurrence(s) at indices:" (pr-str all-player-indices))
+            ;; Show context for each occurrence
+            (doseq [player-idx all-player-indices]
+              (let [start-idx (max 0 (- player-idx 100))
+                    end-idx (min (count code-without-ns) (+ player-idx 106))  ;; 100 + length of "Player"
+                    context (subs code-without-ns start-idx end-idx)]
+                (js/console.warn (str "Context around 'Player' at index " player-idx ":"))
+                (js/console.warn context))))
           (js/console.log "No 'Player' (capital P) found in stripped code")))
       (try
         ;; Evaluate the code in the SCI context
