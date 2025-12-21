@@ -30,7 +30,6 @@
                                                 (highlightActiveLine)
                                                 (bracketMatching)
                                                 cm/default-extensions
-                                                (.of keymap cm/complete-keymap)
                                                 (.of keymap historyKeymap)]
                                 state (.create EditorState
                                                #js {:doc initial-value
