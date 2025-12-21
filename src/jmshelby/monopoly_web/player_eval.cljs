@@ -33,8 +33,7 @@
                             'jmshelby.monopoly.util util-fns
                             'util util-fns}  ;; Add alias
                :classes {'js goog/global :allow :all}
-               :bindings {'*ns* (sci/create-ns 'user nil)
-                          'ex-info ex-info}})))
+               :bindings {'*ns* (sci/create-ns 'user nil)}})))
 
 (defn- strip-ns-form
   "Remove the ns form from the code string since we provide namespaces via SCI context.
@@ -60,57 +59,12 @@
     (let [ctx (create-sci-context)
           ;; Strip ns form since we provide namespaces manually
           code-without-ns (strip-ns-form code-str)]
-      (js/console.log "Evaluating player code...")
-      (js/console.log "Code length:" (count code-without-ns))
-      (js/console.log "First 200 chars of stripped code:" (subs code-without-ns 0 (min 200 (count code-without-ns))))
-      ;; Log full code to help debug symbol resolution issues
-      (js/console.log "=== FULL STRIPPED CODE ===")
-      (js/console.log code-without-ns)
-      (js/console.log "=== END FULL CODE ===")
-      ;; Search for ALL occurrences of "Player" in the code
-      (let [all-player-indices (loop [idx 0
-                                       indices []]
-                                  (if-let [found-idx (clojure.string/index-of code-without-ns "Player" idx)]
-                                    (recur (inc found-idx) (conj indices found-idx))
-                                    indices))]
-        (if (seq all-player-indices)
-          (do
-            (js/console.warn "Found" (count all-player-indices) "'Player' occurrence(s) at indices:" (pr-str all-player-indices))
-            ;; Show context for each occurrence
-            (doseq [player-idx all-player-indices]
-              (let [start-idx (max 0 (- player-idx 100))
-                    end-idx (min (count code-without-ns) (+ player-idx 106))  ;; 100 + length of "Player"
-                    context (subs code-without-ns start-idx end-idx)]
-                (js/console.warn (str "Context around 'Player' at index " player-idx ":"))
-                (js/console.warn context))))
-          (js/console.log "No 'Player' (capital P) found in stripped code")))
       (try
         ;; Evaluate the code in the SCI context
         (sci/eval-string* ctx code-without-ns)
-        (js/console.log "Code evaluated successfully")
         (catch :default e
-          (js/console.error "Error during code evaluation:" e)
+          (js/console.error "Error evaluating player code:" e)
           (js/console.error "Error message:" (ex-message e))
-          (js/console.error "Error type:" (type e))
-          (js/console.error "Error keys:" (js/Object.keys e))
-          (when (.-data e)
-            (let [data (.-data e)]
-              (js/console.error "Error data:" data)
-              (js/console.error "Error data type:" (type data))
-              ;; Try to extract line and column using keyword access (works regardless of minification)
-              (let [error-line (get data :line)
-                    error-col (get data :column)
-                    error-msg (get data :message)]
-                (js/console.error "Extracted from error data - line:" error-line "column:" error-col "message:" error-msg)
-                ;; Show the specific line where the error occurred
-                (when error-line
-                  (let [lines (clojure.string/split code-without-ns #"\n")
-                        error-line-idx (dec error-line)
-                        problematic-line (nth lines error-line-idx nil)]
-                    (js/console.error "=== ERROR AT LINE" error-line "COLUMN" error-col "===")
-                    (js/console.error problematic-line)
-                    (when error-col
-                      (js/console.error (str (apply str (repeat (dec error-col) " ")) "^"))))))))
           (throw e)))
 
       ;; Try to get the decide function from the context
