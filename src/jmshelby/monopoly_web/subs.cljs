@@ -111,3 +111,8 @@
  ::player-lab-stats
  (fn [db _]
    (get-in db [:player-lab :stats])))
+
+(re-frame/reg-sub
+ ::player-lab-num-games
+ (fn [db _]
+   (get-in db [:player-lab :num-games])))

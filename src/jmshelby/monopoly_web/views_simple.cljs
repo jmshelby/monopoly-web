@@ -285,7 +285,8 @@
   (let [running? (re-frame/subscribe [::subs/player-lab-running?])
         progress (re-frame/subscribe [::subs/player-lab-progress])
         total-games (re-frame/subscribe [::subs/player-lab-total])
-        stats (re-frame/subscribe [::subs/player-lab-stats])]
+        stats (re-frame/subscribe [::subs/player-lab-stats])
+        num-games (re-frame/subscribe [::subs/player-lab-num-games])]
     (r/with-let [!editor-view (r/atom nil)
                  get-editor-content (fn []
                                      (when-let [view @!editor-view]
@@ -302,6 +303,22 @@
           [:button.btn-secondary
            {:on-click #(re-frame/dispatch [::events/navigate :battle-opoly])}
            "← Back"]
+          [:div {:style {:display "flex" :align-items "center" :gap "0.5em"}}
+           [:label {:for "num-games" :style {:margin "0"}} "Games:"]
+           [:input {:id "num-games"
+                    :type "number"
+                    :min "1"
+                    :max "10000"
+                    :value @num-games
+                    :disabled @running?
+                    :on-change #(re-frame/dispatch [::events/set-player-lab-num-games
+                                                    (js/parseInt (-> % .-target .-value))])
+                    :style {:width "80px"
+                           :padding "0.5em"
+                           :border "1px solid #444"
+                           :border-radius "4px"
+                           :background-color "#2a2d35"
+                           :color "#fff"}}]]
           [:button.btn-success
            {:on-click run-simulation
             :disabled @running?}

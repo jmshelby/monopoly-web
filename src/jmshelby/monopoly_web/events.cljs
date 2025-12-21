@@ -251,10 +251,15 @@
  (fn [db [_ code]]
    (assoc-in db [:player-lab :code] code)))
 
+(re-frame/reg-event-db
+ ::set-player-lab-num-games
+ (fn [db [_ num-games]]
+   (assoc-in db [:player-lab :num-games] num-games)))
+
 (re-frame/reg-event-fx
  ::run-player-lab-simulation
  (fn [{:keys [db]} [_ code]]
-   (let [num-games 300  ;; Default to 300 games for better statistical significance
+   (let [num-games (get-in db [:player-lab :num-games] 300)  ;; Get from db, default to 300
          player-count 4] ;; Default to 4 players
 
      ;; Store the code and start simulation with custom player code
