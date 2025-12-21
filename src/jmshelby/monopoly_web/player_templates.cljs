@@ -7,7 +7,7 @@
   (:require [clojure.set :as set]
             [jmshelby.monopoly.util :as util]))
 
-;; Right now, just the fn/methods that act as a player logic \"function\"
+;; Right now, just the fn/methods that act as a player logic \\\"function\\\"
 
 ;; For now we just have some dumb logic, to help
 ;; develop and test the engine until it's done
@@ -22,9 +22,9 @@
     (/ owned total)))
 
 (defn trade-side-value
-  \"Given a game board, player, and resources from one
-  side of a trade proposal, return the total \"real\"
-  value of all resources.\"
+  \\\"Given a game board, player, and resources from one
+  side of a trade proposal, return the total \\\"real\\\"
+  value of all resources.\\\"
   [board player resources]
   (letfn [(prop-def [id]
             (->> board :properties
@@ -39,7 +39,7 @@
                      ;; Each card is $50
                      ;; TODO - Need to lookup value based on card.retain/use
                      :cards (repeat (count resource) 50)
-                     ;; Each property current \"real\" value
+                     ;; Each property current \\\"real\\\" value
                      :properties
                      (map (fn [prop-name]
                             (let [prop       (prop-def prop-name)
@@ -52,10 +52,10 @@
          (apply +))))
 
 (defn proposal-benefit
-  \"Given a game-state and proposal map, return the ratio
+  \\\"Given a game-state and proposal map, return the ratio
   benefit/gain based on value of resources. Mortgaged
   properties are worth half (although we should probably
-  subtract 10% for real value).\"
+  subtract 10% for real value).\\\"
   [game-state proposal]
   (let [board       (:board game-state)
         asking      (:trade/asking proposal)
@@ -150,17 +150,17 @@
                  []))))
 
 (defn proposal?
-  \"Given a game-state and player, return the best current
-  proposal available, _if_ it's a smart time to propose one.\"
+  \\\"Given a game-state and player, return the best current
+  proposal available, _if_ it's a smart time to propose one.\\\"
   ;; Street Properties:
   ;; - If we own 50% or more of a street group (but not all),
   ;;   AND someone else owns a property of the same street...
-  ;;       -> Attempt to build offer for that \"target\" property
-  ;;           - From list of our \"undesirable\" properties, ordered
+  ;;       -> Attempt to build offer for that \\\"target\\\" property
+  ;;           - From list of our \\\"undesirable\\\" properties, ordered
   ;;             by current value (taking mortgaged into account),
   ;;             take enough props to reach a value that is more
-  ;;             than the face value of the \"target\" property.
-  ;;             - \"undesirable\" properties:
+  ;;             than the face value of the \\\"target\\\" property.
+  ;;             - \\\"undesirable\\\" properties:
   ;;               - utils
   ;;               - railroads
   ;;               - we own less than 50% of the street group
@@ -180,7 +180,7 @@
 
     (when target-prop
       (let [;; Get props we can offer
-            ;; _         (println (:id player) \": Going after prop: \" target-prop)
+            ;; _         (println (:id player) \\\": Going after prop: \\\" target-prop)
             sacrifice (find-proposable-properties
                        game-state player
                        (-> target-prop :def :price))]
@@ -285,7 +285,7 @@
 
           ;; If no houses to sell or properties to mortgage, we're bankrupt
           :else
-          (throw (ex-info \"Player cannot raise funds - no assets to liquidate\"
+          (throw (ex-info \\\"Player cannot raise funds - no assets to liquidate\\\"
                           {:player-id my-id
                            :amount-needed (:amount params)}))))
 
@@ -370,5 +370,5 @@
            :property-name (-> unmortgage-candidates first :def :name)}
 
           ;; No other options, end turn
-          ;; TODO - soon, \"done\" might not be available in all cases
+          ;; TODO - soon, \\\"done\\\" might not be available in all cases
           :else {:action :done})))))")
