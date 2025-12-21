@@ -65,6 +65,13 @@
         (catch :default e
           (js/console.error "Error evaluating player code:" e)
           (js/console.error "Error message:" (ex-message e))
+          ;; Show line/column if available
+          (when (.-data e)
+            (let [data (.-data e)
+                  error-line (get data :line)
+                  error-col (get data :column)]
+              (when error-line
+                (js/console.error "Error at line:" error-line "column:" error-col))))
           (throw e)))
 
       ;; Try to get the decide function from the context
