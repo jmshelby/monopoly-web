@@ -181,25 +181,38 @@
 
 ;; Run a single game with custom player logic
 (defn run-custom-game
-  "Run a single game with custom player logic. Returns the final game state.
-   custom-player-fn: the player decision function to use for all players
-   num-players: number of players (default 4)
+  "Run a single game with 1 custom player vs 3 dumb players.
+   The custom player is placed in a random position each game.
+   custom-player-fn: the player decision function for the custom player
+   num-players: number of players (default 4, must be 4 for now)
    safety-threshold: maximum iterations before stopping (default 2000)"
   ([custom-player-fn] (run-custom-game custom-player-fn 4))
   ([custom-player-fn num-players] (run-custom-game custom-player-fn num-players 2000))
   ([custom-player-fn num-players safety-threshold]
    (js/console.log "run-custom-game: Creating player configs...")
-   (let [;; Create player configs with custom function
+   (let [;; Randomly choose which position (0-3) gets the custom player
+         custom-player-position (rand-int num-players)
+         _                      (js/console.log "Custom player position:" custom-player-position)
+         ;; Create player configs with custom player at random position, dumb players elsewhere
          player-configs (->> (range 65 (+ num-players 65))
                             (map char)
                             (map str)
-                            (map #(hash-map :id % :function custom-player-fn))
+                            (map-indexed (fn [idx player-id]
+                                          (hash-map :id player-id
+                                                   :function (if (= idx custom-player-position)
+                                                              custom-player-fn
+                                                              dumb-player/decide))))
                             vec)
          _              (js/console.log "run-custom-game: Initializing game state...")
          ;; Initialize game state
          initial-state  (init-game-state-with-custom-players player-configs)
+         ;; Track which player is the custom player
+         custom-player-id (:id (nth (:players initial-state) custom-player-position))
+         _              (js/console.log "Custom player ID:" custom-player-id)
+         ;; Add custom player ID to game state for tracking
+         initial-state-with-custom (assoc initial-state :custom-player-id custom-player-id)
          _              (js/console.log "run-custom-game: Running game to completion...")
          ;; Run the game to completion
-         final-state    (run-game-from-state initial-state safety-threshold)]
+         final-state    (run-game-from-state initial-state-with-custom safety-threshold)]
      (js/console.log "run-custom-game: Game complete!")
      final-state)))

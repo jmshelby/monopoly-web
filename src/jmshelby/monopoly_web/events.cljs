@@ -284,6 +284,22 @@
    ;; Just return db - we don't need the output channel anymore
    db))
 
+(defn calculate-custom-player-stats
+  "Calculate statistics specific to custom player performance"
+  [results]
+  (let [games-with-custom-player (->> results (filter :custom-player-id))
+        custom-player-wins (->> games-with-custom-player (filter :custom-player-won))
+        total-custom-games (count games-with-custom-player)
+        custom-win-count (count custom-player-wins)
+        custom-win-percentage (if (> total-custom-games 0)
+                                (* 100.0 (/ custom-win-count total-custom-games))
+                                0.0)]
+    {:custom-player-games total-custom-games
+     :custom-player-wins custom-win-count
+     :custom-player-win-percentage custom-win-percentage
+     :custom-player-expected-percentage 25.0  ; 1 in 4 players
+     :custom-player-performance-ratio (/ custom-win-percentage 25.0)}))
+
 (re-frame/reg-event-fx
  ::player-lab-game-finished
  (fn [{:keys [db]} [_ game]]
@@ -293,9 +309,11 @@
          total-games (get-in db [:player-lab :total-games])
          prev-results (get-in db [:player-lab :results])
          new-results (conj prev-results game)
-         new-stats (core-sim/calculate-statistics new-results
-                                                  (count new-results)
-                                                  duration-ms)
+         general-stats (core-sim/calculate-statistics new-results
+                                                      (count new-results)
+                                                      duration-ms)
+         custom-stats (calculate-custom-player-stats new-results)
+         new-stats (merge general-stats custom-stats)
          more-games? (not= total-games (count new-results))]
 
      ;; Update db with new results

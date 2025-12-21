@@ -81,10 +81,17 @@
                (let [_          (println "Calling run-custom-game...")
                      game-state (player-eval/run-custom-game player-fn num-players safety-threshold)
                      _          (println "Game completed, analyzing...")
-                     analysis   (core-sim/analyze-game-outcome game-state)]
+                     analysis   (core-sim/analyze-game-outcome game-state)
+                     ;; Enhance analysis with custom player tracking
+                     custom-player-id (:custom-player-id game-state)
+                     custom-player-won? (and (:has-winner analysis)
+                                            (= custom-player-id (:winner-id analysis)))
+                     enhanced-analysis (assoc analysis
+                                             :custom-player-id custom-player-id
+                                             :custom-player-won custom-player-won?)]
                  (println "Analysis complete, dispatching results...")
                  ;; Dispatch completion event for this game
-                 (re-frame/dispatch [completion-event analysis])
+                 (re-frame/dispatch [completion-event enhanced-analysis])
                  (println "Game" (inc i) "finished successfully")
                  ;; Yield to the event loop so UI can update
                  (async/<! (async/timeout 0)))
