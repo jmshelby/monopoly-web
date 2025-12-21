@@ -80,13 +80,18 @@
              (dotimes [i num-games]
                (try
                  (println "Running game" (inc i) "of" num-games)
-                 (let [game-state (player-eval/run-custom-game player-fn num-players safety-threshold)
-                       analysis (core-sim/analyze-game-outcome game-state)]
+                 (let [_          (println "Calling run-custom-game...")
+                       game-state (player-eval/run-custom-game player-fn num-players safety-threshold)
+                       _          (println "Game completed, analyzing...")
+                       analysis   (core-sim/analyze-game-outcome game-state)]
+                   (println "Analysis complete, dispatching results...")
                    (async/>! output-ch analysis)
                    ;; Dispatch completion event for this game
-                   (re-frame/dispatch [completion-event analysis]))
+                   (re-frame/dispatch [completion-event analysis])
+                   (println "Game" (inc i) "finished successfully"))
                  (catch :default e
-                   (js/console.error "Error running custom game:" e))))
+                   (js/console.error "Error running custom game:" e)
+                   (js/console.error "Error stack:" (.-stack e)))))
              (async/close! output-ch))))
        ;; If evaluation failed, dispatch error
        (do

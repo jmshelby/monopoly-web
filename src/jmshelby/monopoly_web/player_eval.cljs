@@ -188,14 +188,18 @@
   ([custom-player-fn] (run-custom-game custom-player-fn 4))
   ([custom-player-fn num-players] (run-custom-game custom-player-fn num-players 2000))
   ([custom-player-fn num-players safety-threshold]
+   (js/console.log "run-custom-game: Creating player configs...")
    (let [;; Create player configs with custom function
          player-configs (->> (range 65 (+ num-players 65))
                             (map char)
                             (map str)
                             (map #(hash-map :id % :function custom-player-fn))
                             vec)
+         _              (js/console.log "run-custom-game: Initializing game state...")
          ;; Initialize game state
-         initial-state (init-game-state-with-custom-players player-configs)
+         initial-state  (init-game-state-with-custom-players player-configs)
+         _              (js/console.log "run-custom-game: Running game to completion...")
          ;; Run the game to completion
-         final-state (run-game-from-state initial-state safety-threshold)]
+         final-state    (run-game-from-state initial-state safety-threshold)]
+     (js/console.log "run-custom-game: Game complete!")
      final-state)))
