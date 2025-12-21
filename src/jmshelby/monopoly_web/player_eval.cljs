@@ -168,7 +168,7 @@
           (assoc current-state :exception exception)
 
           ;; Game completed normally
-          (= :completed (:status state))
+          (= :complete (:status state))
           state
 
           ;; Failsafe - too many iterations
