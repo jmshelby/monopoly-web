@@ -33,7 +33,8 @@
                             'jmshelby.monopoly.util util-fns
                             'util util-fns}  ;; Add alias
                :classes {'js goog/global :allow :all}
-               :bindings {'*ns* (sci/create-ns 'user nil)}})))
+               :bindings {'*ns* (sci/create-ns 'user nil)
+                          'ex-info ex-info}})))
 
 (defn- strip-ns-form
   "Remove the ns form from the code string since we provide namespaces via SCI context.
