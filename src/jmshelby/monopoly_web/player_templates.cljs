@@ -285,7 +285,7 @@
 
           ;; If no houses to sell or properties to mortgage, we're bankrupt
           :else
-          (throw (ex-info \\\"Player cannot raise funds - no assets to liquidate\\\"
+          (throw (ex-info \"Player cannot raise funds - no assets to liquidate\"
                           {:player-id my-id
                            :amount-needed (:amount params)}))))
 
