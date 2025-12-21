@@ -93,19 +93,14 @@
           (js/console.error "Error type:" (type e))
           (js/console.error "Error keys:" (js/Object.keys e))
           (when (.-data e)
-            (let [data (.-data e)
-                  d-array (aget data "D")]  ;; Use "D" not "C"!
+            (let [data (.-data e)]
               (js/console.error "Error data:" data)
               (js/console.error "Error data type:" (type data))
-              (js/console.error "Error data keys:" (js/Object.keys data))
-              (js/console.error "Error data as JSON:" (js/JSON.stringify data nil 2))
-              ;; Debug the D array structure
-              (js/console.error "D array:" d-array)
-              (js/console.error "D array length:" (when d-array (.-length d-array)))
-              ;; Try to extract line and column
-              (let [error-line (when d-array (aget d-array 3))
-                    error-col (when d-array (aget d-array 5))]
-                (js/console.error "Extracted line:" error-line "column:" error-col)
+              ;; Try to extract line and column using keyword access (works regardless of minification)
+              (let [error-line (get data :line)
+                    error-col (get data :column)
+                    error-msg (get data :message)]
+                (js/console.error "Extracted from error data - line:" error-line "column:" error-col "message:" error-msg)
                 ;; Show the specific line where the error occurred
                 (when error-line
                   (let [lines (clojure.string/split code-without-ns #"\n")
