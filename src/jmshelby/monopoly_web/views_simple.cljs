@@ -333,6 +333,33 @@
         ;; Results section
         (if @stats
           [:div.player-lab-results
+           ;; Custom Player Performance (if available)
+           (when (:custom-player-games @stats)
+             [:div {:style {:margin-bottom "2em"
+                           :padding "1em"
+                           :background-color "#f8f9fa"
+                           :border-left "4px solid #28a745"
+                           :border-radius "4px"}}
+              [:h4 {:style {:margin-top "0" :color "#28a745"}} "🎯 Custom Player Performance"]
+              [:div {:style {:font-family "monospace" :font-size "14px"}}
+               [:p [:strong "Win Rate: "]
+                (str (:custom-player-wins @stats) " / " (:custom-player-games @stats)
+                     " (" (.toFixed (:custom-player-win-percentage @stats) 1) "%)")]
+               [:p [:strong "Expected (baseline): "] "25.0% (1 in 4 players)"]
+               [:p [:strong "Performance Ratio: "]
+                [:span {:style {:color (if (>= (:custom-player-performance-ratio @stats) 1.0)
+                                        "#28a745"  ; green if better
+                                        "#dc3545")  ; red if worse
+                               :font-weight "bold"}}
+                 (str (.toFixed (:custom-player-performance-ratio @stats) 2) "x")]
+                " "
+                (cond
+                  (>= (:custom-player-performance-ratio @stats) 1.2) "🚀 Significantly better!"
+                  (>= (:custom-player-performance-ratio @stats) 1.0) "✓ Better than baseline"
+                  (>= (:custom-player-performance-ratio @stats) 0.8) "≈ Similar to baseline"
+                  :else "⚠ Worse than baseline")]]])
+
+           ;; General Stats
            [:div {:class "code-block" :style {:font-size "12px"}}
             (with-out-str
               (output/print-simulation-results @stats))]]
