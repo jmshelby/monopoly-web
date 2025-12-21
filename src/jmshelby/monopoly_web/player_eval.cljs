@@ -33,7 +33,11 @@
                             'jmshelby.monopoly.util util-fns
                             'util util-fns}  ;; Add alias
                :classes {'js goog/global :allow :all}
-               :bindings {'*ns* (sci/create-ns 'user nil)}})))
+               ;; Add core functions to bindings to ensure they're available
+               :bindings {'*ns* (sci/create-ns 'user nil)
+                          'int int
+                          'str str
+                          'type type}})))
 
 (defn- strip-ns-form
   "Remove the ns form from the code string since we provide namespaces via SCI context.
@@ -94,26 +98,17 @@
           (js/console.error "Error keys:" (js/Object.keys e))
           (when (.-data e)
             (let [data (.-data e)
-                  c-array (aget data "C")]
+                  d-array (aget data "D")]  ;; Use "D" not "C"!
               (js/console.error "Error data:" data)
               (js/console.error "Error data type:" (type data))
               (js/console.error "Error data keys:" (js/Object.keys data))
               (js/console.error "Error data as JSON:" (js/JSON.stringify data nil 2))
-              ;; Debug the C array structure
-              (js/console.error "C array:" c-array)
-              (js/console.error "C array length:" (when c-array (.-length c-array)))
-              (when c-array
-                (js/console.error "C[0]:" (aget c-array 0))
-                (js/console.error "C[1]:" (aget c-array 1))
-                (js/console.error "C[2]:" (aget c-array 2))
-                (js/console.error "C[3]:" (aget c-array 3))
-                (js/console.error "C[4]:" (aget c-array 4))
-                (js/console.error "C[5]:" (aget c-array 5))
-                (js/console.error "C[6]:" (aget c-array 6))
-                (js/console.error "C[7]:" (aget c-array 7)))
+              ;; Debug the D array structure
+              (js/console.error "D array:" d-array)
+              (js/console.error "D array length:" (when d-array (.-length d-array)))
               ;; Try to extract line and column
-              (let [error-line (when c-array (aget c-array 3))
-                    error-col (when c-array (aget c-array 5))]
+              (let [error-line (when d-array (aget d-array 3))
+                    error-col (when d-array (aget d-array 5))]
                 (js/console.error "Extracted line:" error-line "column:" error-col)
                 ;; Show the specific line where the error occurred
                 (when error-line
