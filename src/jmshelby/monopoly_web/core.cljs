@@ -69,30 +69,26 @@
      (if-let [player-fn (player-eval/create-player-fn player-code)]
        (do
          (println "Player code evaluated successfully")
-         ;; Create a channel for results
-         (let [output-ch (async/chan)]
-           ;; Dispatch started event
-           (when started-event
-             (re-frame/dispatch [started-event output-ch]))
+         ;; Dispatch started event
+         (when started-event
+           (re-frame/dispatch [started-event]))
 
-           ;; Run games asynchronously
-           (async/go
-             (dotimes [i num-games]
-               (try
-                 (println "Running game" (inc i) "of" num-games)
-                 (let [_          (println "Calling run-custom-game...")
-                       game-state (player-eval/run-custom-game player-fn num-players safety-threshold)
-                       _          (println "Game completed, analyzing...")
-                       analysis   (core-sim/analyze-game-outcome game-state)]
-                   (println "Analysis complete, dispatching results...")
-                   (async/>! output-ch analysis)
-                   ;; Dispatch completion event for this game
-                   (re-frame/dispatch [completion-event analysis])
-                   (println "Game" (inc i) "finished successfully"))
-                 (catch :default e
-                   (js/console.error "Error running custom game:" e)
-                   (js/console.error "Error stack:" (.-stack e)))))
-             (async/close! output-ch))))
+         ;; Run games asynchronously
+         (async/go
+           (dotimes [i num-games]
+             (try
+               (println "Running game" (inc i) "of" num-games)
+               (let [_          (println "Calling run-custom-game...")
+                     game-state (player-eval/run-custom-game player-fn num-players safety-threshold)
+                     _          (println "Game completed, analyzing...")
+                     analysis   (core-sim/analyze-game-outcome game-state)]
+                 (println "Analysis complete, dispatching results...")
+                 ;; Dispatch completion event for this game
+                 (re-frame/dispatch [completion-event analysis])
+                 (println "Game" (inc i) "finished successfully"))
+               (catch :default e
+                 (js/console.error "Error running custom game:" e)
+                 (js/console.error "Error stack:" (.-stack e)))))))
        ;; If evaluation failed, dispatch error
        (do
          (println "Failed to evaluate player code")

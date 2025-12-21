@@ -280,8 +280,9 @@
 
 (re-frame/reg-event-db
  ::player-lab-started
- (fn [db [_ output-ch]]
-   (assoc-in db [:player-lab :output-chan] output-ch)))
+ (fn [db [_]]
+   ;; Just return db - we don't need the output channel anymore
+   db))
 
 (re-frame/reg-event-fx
  ::player-lab-game-finished
