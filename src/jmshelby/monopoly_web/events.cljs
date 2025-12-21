@@ -254,7 +254,7 @@
 (re-frame/reg-event-fx
  ::run-player-lab-simulation
  (fn [{:keys [db]} [_ code]]
-   (let [num-games 100  ;; Default to 100 games for now
+   (let [num-games 300  ;; Default to 300 games for better statistical significance
          player-count 4] ;; Default to 4 players
 
      ;; Store the code and start simulation with custom player code
