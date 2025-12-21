@@ -12,7 +12,7 @@
    ["@codemirror/state" :refer [EditorState]]
    ["@codemirror/view" :refer [EditorView lineNumbers keymap highlightActiveLine]]
    ["@codemirror/commands" :refer [defaultKeymap history historyKeymap]]
-   ["@codemirror/language" :refer [bracketMatching]]
+   ["@codemirror/language" :refer [bracketMatching foldGutter foldKeymap]]
    ["@codemirror/theme-one-dark" :refer [oneDark]]
    [nextjournal.clojure-mode :as cm]
    [applied-science.js-interop :as j]
@@ -29,8 +29,10 @@
                                                 (lineNumbers)
                                                 (highlightActiveLine)
                                                 (bracketMatching)
+                                                (foldGutter)
                                                 cm/default-extensions
-                                                (.of keymap historyKeymap)]
+                                                (.of keymap historyKeymap)
+                                                (.of keymap foldKeymap)]
                                 state (.create EditorState
                                                #js {:doc initial-value
                                                     :extensions extensions})
