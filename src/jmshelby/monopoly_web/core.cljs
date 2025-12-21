@@ -85,7 +85,9 @@
                  (println "Analysis complete, dispatching results...")
                  ;; Dispatch completion event for this game
                  (re-frame/dispatch [completion-event analysis])
-                 (println "Game" (inc i) "finished successfully"))
+                 (println "Game" (inc i) "finished successfully")
+                 ;; Yield to the event loop so UI can update
+                 (async/<! (async/timeout 0)))
                (catch :default e
                  (js/console.error "Error running custom game:" e)
                  (js/console.error "Error stack:" (.-stack e)))))))
