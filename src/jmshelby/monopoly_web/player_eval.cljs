@@ -66,6 +66,11 @@
       (js/console.log "=== FULL STRIPPED CODE ===")
       (js/console.log code-without-ns)
       (js/console.log "=== END FULL CODE ===")
+      ;; Search for "Player" in the code
+      (let [player-idx (clojure.string/index-of code-without-ns "Player")]
+        (if player-idx
+          (js/console.warn "Found 'Player' at index:" player-idx)
+          (js/console.log "No 'Player' (capital P) found in stripped code")))
       (try
         ;; Evaluate the code in the SCI context
         (sci/eval-string* ctx code-without-ns)
@@ -77,21 +82,36 @@
           (js/console.error "Error keys:" (js/Object.keys e))
           (when (.-data e)
             (let [data (.-data e)
-                  error-line (aget data "C" 3)  ;; Line number from error data
-                  error-col (aget data "C" 5)]  ;; Column number from error data
+                  c-array (aget data "C")]
               (js/console.error "Error data:" data)
               (js/console.error "Error data type:" (type data))
               (js/console.error "Error data keys:" (js/Object.keys data))
               (js/console.error "Error data as JSON:" (js/JSON.stringify data nil 2))
-              ;; Show the specific line where the error occurred
-              (when error-line
-                (let [lines (clojure.string/split code-without-ns #"\n")
-                      error-line-idx (dec error-line)
-                      problematic-line (nth lines error-line-idx nil)]
-                  (js/console.error "=== ERROR AT LINE" error-line "COLUMN" error-col "===")
-                  (js/console.error problematic-line)
-                  (when error-col
-                    (js/console.error (str (apply str (repeat (dec error-col) " ")) "^")))))))
+              ;; Debug the C array structure
+              (js/console.error "C array:" c-array)
+              (js/console.error "C array length:" (when c-array (.-length c-array)))
+              (when c-array
+                (js/console.error "C[0]:" (aget c-array 0))
+                (js/console.error "C[1]:" (aget c-array 1))
+                (js/console.error "C[2]:" (aget c-array 2))
+                (js/console.error "C[3]:" (aget c-array 3))
+                (js/console.error "C[4]:" (aget c-array 4))
+                (js/console.error "C[5]:" (aget c-array 5))
+                (js/console.error "C[6]:" (aget c-array 6))
+                (js/console.error "C[7]:" (aget c-array 7)))
+              ;; Try to extract line and column
+              (let [error-line (when c-array (aget c-array 3))
+                    error-col (when c-array (aget c-array 5))]
+                (js/console.error "Extracted line:" error-line "column:" error-col)
+                ;; Show the specific line where the error occurred
+                (when error-line
+                  (let [lines (clojure.string/split code-without-ns #"\n")
+                        error-line-idx (dec error-line)
+                        problematic-line (nth lines error-line-idx nil)]
+                    (js/console.error "=== ERROR AT LINE" error-line "COLUMN" error-col "===")
+                    (js/console.error problematic-line)
+                    (when error-col
+                      (js/console.error (str (apply str (repeat (dec error-col) " ")) "^"))))))))
           (throw e)))
 
       ;; Try to get the decide function from the context
