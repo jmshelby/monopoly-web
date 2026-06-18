@@ -21,6 +21,15 @@
                      :results nil
                      :config {}}
 
+   ;; Player lab state
+   :player-lab {:num-games 300
+                :code nil
+                :running? false
+                :progress 0
+                :total-games 0
+                :results []
+                :stats nil}
+
    ;; UI state
    :loading? false
    :error-message nil})

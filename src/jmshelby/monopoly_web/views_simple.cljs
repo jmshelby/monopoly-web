@@ -2,11 +2,47 @@
   (:require
    [cljs.pprint :refer [pprint]]
    [re-frame.core :as re-frame]
+   [reagent.core :as r]
    [jmshelby.monopoly.simulation.output :as output]
    [jmshelby.monopoly-web.events :as events]
    [jmshelby.monopoly-web.routes :as routes]
    [jmshelby.monopoly-web.subs :as subs]
-   [jmshelby.monopoly.analysis :as analysis]))
+   [jmshelby.monopoly.analysis :as analysis]
+   [reagent.dom :as rdom]
+   ["@codemirror/state" :refer [EditorState]]
+   ["@codemirror/view" :refer [EditorView lineNumbers keymap highlightActiveLine]]
+   ["@codemirror/commands" :refer [defaultKeymap history historyKeymap]]
+   ["@codemirror/language" :refer [bracketMatching foldGutter foldKeymap]]
+   ["@codemirror/theme-one-dark" :refer [oneDark]]
+   [nextjournal.clojure-mode :as cm]
+   [applied-science.js-interop :as j]
+   [jmshelby.monopoly-web.player-templates :as templates]))
+
+;; CodeMirror 6 editor component using nextjournal pattern
+(defn clojure-editor [props]
+  (r/with-let [!view (or (:view-atom props) (r/atom nil))
+               mount! (fn [el]
+                        (when el
+                          (let [initial-value (or (:value props) "")
+                                extensions #js [oneDark
+                                                (history)
+                                                (lineNumbers)
+                                                (highlightActiveLine)
+                                                (bracketMatching)
+                                                (foldGutter)
+                                                cm/default-extensions
+                                                (.of keymap historyKeymap)
+                                                (.of keymap foldKeymap)]
+                                state (.create EditorState
+                                               #js {:doc initial-value
+                                                    :extensions extensions})
+                                view (new EditorView #js {:state state :parent el})]
+                            (reset! !view view))))]
+    [:div.player-lab-textarea {:ref mount!}]
+
+    (finally
+      (when @!view
+        (.destroy @!view)))))
 
 ;; Simple HTML-based components without re-com
 (defn simple-battle-opoly-panel []
@@ -24,7 +60,11 @@
               :on-click #(do
                           (re-frame/dispatch [::events/set-game-mode :bulk])
                           (re-frame/dispatch [::events/navigate :setup]))}
-     "Run lots of games w/stats"]]])
+     "Run lots of games w/stats"]
+    [:button {:class "btn-info"
+              :style {:display "block" :margin "1em auto"}
+              :on-click #(re-frame/dispatch [::events/navigate :player-lab])}
+     "Player Lab"]]])
 
 (defn simple-setup-panel []
   (let [mode (re-frame/subscribe [::subs/game-mode])]
@@ -242,11 +282,114 @@
          ;
          ]])]))
 
+(defn simple-player-lab-panel []
+  (let [running? (re-frame/subscribe [::subs/player-lab-running?])
+        progress (re-frame/subscribe [::subs/player-lab-progress])
+        total-games (re-frame/subscribe [::subs/player-lab-total])
+        stats (re-frame/subscribe [::subs/player-lab-stats])
+        num-games (re-frame/subscribe [::subs/player-lab-num-games])]
+    (r/with-let [!editor-view (r/atom nil)
+                 get-editor-content (fn []
+                                     (when-let [view @!editor-view]
+                                       (-> view .-state .-doc .toString)))
+                 run-simulation (fn []
+                                  (when-let [code (get-editor-content)]
+                                    (re-frame/dispatch [::events/run-player-lab-simulation code])))]
+      [:div.player-lab-container
+       ;; Left Panel: Code Editor
+       [:div.player-lab-left-panel
+        [:div.player-lab-header
+         [:h3 "Player Logic Editor"]
+         [:div.player-lab-buttons
+          [:button.btn-secondary
+           {:on-click #(re-frame/dispatch [::events/navigate :battle-opoly])}
+           "← Back"]
+          [:div {:style {:display "flex" :align-items "center" :gap "0.5em"}}
+           [:label {:for "num-games" :style {:margin "0"}} "Games:"]
+           [:input {:id "num-games"
+                    :type "number"
+                    :min "1"
+                    :max "10000"
+                    :value @num-games
+                    :disabled @running?
+                    :on-change #(re-frame/dispatch [::events/set-player-lab-num-games
+                                                    (js/parseInt (-> % .-target .-value))])
+                    :style {:width "80px"
+                           :padding "0.5em"
+                           :border "1px solid #444"
+                           :border-radius "4px"
+                           :background-color "#2a2d35"
+                           :color "#fff"}}]]
+          [:button.btn-success
+           {:on-click run-simulation
+            :disabled @running?}
+           (if @running? "Running..." "Run Simulation")]]]
+
+        ;; Code Editor Area
+        [:div.player-lab-editor-area
+         [:h4 "Code:"]
+         [clojure-editor {:value templates/dumb-player-template
+                         :view-atom !editor-view}]]]
+
+       ;; Right Panel: Stats/Results
+       [:div.player-lab-right-panel
+        [:h3 "Simulation Results"]
+
+        ;; Progress section
+        (when @running?
+          [:div {:style {:margin-bottom "2em"}}
+           [:h4 "Progress"]
+           [:div {:style {:background-color "#e9ecef" :height "20px" :border-radius "10px" :overflow "hidden"}}
+            [:div {:style {:background-color "#007bff"
+                           :height "100%"
+                           :width (str (if (and @progress @total-games (> @total-games 0))
+                                         (* 100 (/ @progress @total-games))
+                                         0) "%")
+                           :transition "width 0.3s ease"}}]]
+           [:p (str "Completed " (or @progress 0) " / " (or @total-games 0) " games")]])
+
+        ;; Results section
+        (if @stats
+          [:div.player-lab-results
+           ;; Custom Player Performance (if available)
+           (when (:custom-player-games @stats)
+             [:div {:style {:margin-bottom "2em"
+                           :padding "1em"
+                           :background-color "#1a1d23"
+                           :border-left "4px solid #4ade80"
+                           :border-radius "4px"}}
+              [:h4 {:style {:margin-top "0" :color "#4ade80"}} "🎯 Custom Player Performance"]
+              [:div {:style {:font-family "monospace" :font-size "14px"}}
+               [:p [:strong "Win Rate: "]
+                (str (:custom-player-wins @stats) " / " (:custom-player-games @stats)
+                     " (" (.toFixed (:custom-player-win-percentage @stats) 1) "%)")]
+               [:p [:strong "Expected (baseline): "] "25.0% (1 in 4 players)"]
+               [:p [:strong "Performance Ratio: "]
+                [:span {:style {:color (if (>= (:custom-player-performance-ratio @stats) 1.0)
+                                        "#4ade80"  ; green if better
+                                        "#f87171")  ; red if worse
+                               :font-weight "bold"}}
+                 (str (.toFixed (:custom-player-performance-ratio @stats) 2) "x")]
+                " "
+                (cond
+                  (>= (:custom-player-performance-ratio @stats) 1.2) "🚀 Significantly better!"
+                  (>= (:custom-player-performance-ratio @stats) 1.0) "✓ Better than baseline"
+                  (>= (:custom-player-performance-ratio @stats) 0.8) "≈ Similar to baseline"
+                  :else "⚠ Worse than baseline")]]])
+
+           ;; General Stats
+           [:div {:class "code-block" :style {:font-size "12px"}}
+            (with-out-str
+              (output/print-simulation-results @stats))]]
+          [:div.player-lab-placeholder
+           [:p "Simulation results will appear here after running the code."]])]])))
+
 ;; Panel routing for simple components
 (defmethod routes/panels :battle-opoly-panel [] [simple-battle-opoly-panel])
 (defmethod routes/panels :setup-panel [] [simple-setup-panel])
 (defmethod routes/panels :single-game-panel [] [simple-single-game-panel])
 (defmethod routes/panels :bulk-simulation-panel [] [simple-bulk-simulation-panel])
+(defmethod routes/panels :player-lab-panel [] [simple-player-lab-panel])
 
 ;; Simple main panel
 (defn simple-main-panel []

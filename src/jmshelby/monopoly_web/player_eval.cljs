@@ -1,0 +1,218 @@
+(ns jmshelby.monopoly-web.player-eval
+  (:require
+   [sci.core :as sci]
+   [clojure.set :as set]
+   [clojure.string]
+   [jmshelby.monopoly.util :as util]
+   [jmshelby.monopoly.core :as core]
+   [jmshelby.monopoly.definitions :as defs]
+   [jmshelby.monopoly.cards :as cards]
+   [jmshelby.monopoly.player :as player]
+   [jmshelby.monopoly.players.dumb :as dumb-player]))
+
+;; Create a SCI context with the namespaces needed by player code
+(defn create-sci-context []
+  (let [;; Define the utility functions map once
+        util-fns {'player-by-id util/player-by-id
+                  'owned-properties util/owned-properties
+                  'owned-property-details util/owned-property-details
+                  'street-group-counts util/street-group-counts
+                  'potential-house-purchases util/potential-house-purchases
+                  'half util/half
+                  'rcompare util/rcompare
+                  'sum util/sum
+                  'other-players util/other-players
+                  'current-player util/current-player
+                  'has-bail-card? util/has-bail-card?}
+        ;; Define the set functions map once
+        set-fns {'difference set/difference
+                 'union set/union
+                 'intersection set/intersection}]
+    (sci/init {:namespaces {'clojure.set set-fns
+                            'set set-fns  ;; Add alias
+                            'jmshelby.monopoly.util util-fns
+                            'util util-fns}  ;; Add alias
+               :classes {'js goog/global :allow :all}
+               :bindings {'*ns* (sci/create-ns 'user nil)}})))
+
+(defn- strip-ns-form
+  "Remove the ns form from the code string since we provide namespaces via SCI context.
+   This is a simple heuristic that removes everything from (ns to the first line that starts with (def"
+  [code-str]
+  (let [;; Find the first (defn, (defn-, (def, etc after the ns form
+        first-def-idx (or (clojure.string/index-of code-str "\n(def")
+                          ;; If no newline before def, try without newline
+                          (clojure.string/index-of code-str "(def"))
+        ;; If we found a def, take everything from there onwards
+        result (if first-def-idx
+                 (subs code-str first-def-idx)
+                 ;; Otherwise just try removing the ns form with a simple regex
+                 (clojure.string/replace code-str #"(?s)^\s*\(ns\s+.*?\n\n" ""))]
+    (clojure.string/trim result)))
+
+;; Evaluate player code and extract the decide function
+(defn eval-player-code
+  "Evaluates the player code string and returns the decide function.
+   Returns nil if evaluation fails or decide function is not found."
+  [code-str]
+  (try
+    (let [ctx (create-sci-context)
+          ;; Strip ns form since we provide namespaces manually
+          code-without-ns (strip-ns-form code-str)]
+      (try
+        ;; Evaluate the code in the SCI context
+        (sci/eval-string* ctx code-without-ns)
+        (catch :default e
+          (js/console.error "Error evaluating player code:" e)
+          (js/console.error "Error message:" (ex-message e))
+          ;; Show line/column if available
+          (when (.-data e)
+            (let [data (.-data e)
+                  error-line (get data :line)
+                  error-col (get data :column)]
+              (when error-line
+                (js/console.error "Error at line:" error-line "column:" error-col))))
+          (throw e)))
+
+      ;; Try to get the decide function from the context
+      (let [decide-fn (try
+                        (sci/eval-string* ctx "decide")
+                        (catch :default e
+                          (js/console.error "Couldn't find decide function:" e)
+                          nil))]
+        (if (fn? decide-fn)
+          (do
+            (js/console.log "Successfully extracted decide function")
+            decide-fn)
+          (do
+            (js/console.error "decide is not a function:" (type decide-fn))
+            nil))))
+    (catch :default e
+      (js/console.error "Error evaluating player code:" e)
+      (js/console.error "Error details:" (ex-message e))
+      nil)))
+
+;; Wrapper to make the evaluated decide function compatible with the game engine
+(defn create-player-fn
+  "Creates a player function from evaluated code that's compatible with the game engine."
+  [code-str]
+  (when-let [decide-fn (eval-player-code code-str)]
+    (fn [game-state player-id method params]
+      (decide-fn game-state player-id method params))))
+
+;; Custom game initialization that supports custom player functions
+(defn init-game-state-with-custom-players
+  "Initialize a game state with custom player functions.
+   player-configs: vector of maps with :id and :function keys
+   If player-configs is a number, creates that many players with dumb-player logic."
+  [player-configs]
+  (let [;; Handle both number and player configs
+        players (if (number? player-configs)
+                  ;; If it's a number, create default players
+                  (->> (range 65 (+ player-configs 65))
+                       (map char)
+                       (map str)
+                       (map #(hash-map :id %
+                                      :function dumb-player/decide
+                                      :status :playing
+                                      :cash 1500
+                                      :cell-residency 0
+                                      :cards #{}
+                                      :properties {}))
+                       vec)
+                  ;; If it's player configs, use them
+                  (->> player-configs
+                       (map #(merge {:status :playing
+                                    :cash 1500
+                                    :cell-residency 0
+                                    :cards #{}
+                                    :properties {}}
+                                   %))
+                       vec))]
+    ;; Define initial game state (copied from core/init-game-state)
+    {:status       :playing
+     :players      players
+     :current-turn {:player     (-> players first :id)
+                    :dice-rolls []}
+     :board        defs/board
+     :card-queue   (cards/cards->deck-queues (:cards defs/board))
+     :transactions []
+     :functions    {:move-to-cell           core/move-to-cell
+                    :apply-dice-roll        core/apply-dice-roll
+                    :make-requisite-payment player/make-requisite-payment}}))
+
+;; Run a game to completion from initial state (similar to rand-game-end-state)
+(defn- run-game-from-state
+  "Run a game to completion from an initial state. Returns final game state."
+  [initial-state safety-threshold]
+  (letfn [(safe-advance [state iteration]
+            (try
+              (let [next-state (core/advance-board state)]
+                {:state next-state :exception nil})
+              (catch :default e
+                {:state state
+                 :exception {:message (.-message e)
+                            :type (str (type e))
+                            :iteration iteration
+                            :last-transaction (last (:transactions state))
+                            :current-player (get-in state [:current-turn :player])
+                            :player-cash (->> state :players
+                                             (map #(vector (:id %) (select-keys % [:cash :status])))
+                                             (into {}))}})))]
+    (loop [current-state initial-state
+           iteration-count 0]
+      (let [{:keys [state exception]} (safe-advance current-state iteration-count)]
+        (cond
+          ;; Exception occurred
+          exception
+          (assoc current-state :exception exception)
+
+          ;; Game completed normally
+          (= :complete (:status state))
+          state
+
+          ;; Failsafe - too many iterations
+          (>= iteration-count safety-threshold)
+          (assoc state :failsafe-stop true :iterations iteration-count)
+
+          ;; Continue the game
+          :else
+          (recur state (inc iteration-count)))))))
+
+;; Run a single game with custom player logic
+(defn run-custom-game
+  "Run a single game with 1 custom player vs 3 dumb players.
+   The custom player is placed in a random position each game.
+   custom-player-fn: the player decision function for the custom player
+   num-players: number of players (default 4, must be 4 for now)
+   safety-threshold: maximum iterations before stopping (default 2000)"
+  ([custom-player-fn] (run-custom-game custom-player-fn 4))
+  ([custom-player-fn num-players] (run-custom-game custom-player-fn num-players 2000))
+  ([custom-player-fn num-players safety-threshold]
+   (js/console.log "run-custom-game: Creating player configs...")
+   (let [;; Randomly choose which position (0-3) gets the custom player
+         custom-player-position (rand-int num-players)
+         _                      (js/console.log "Custom player position:" custom-player-position)
+         ;; Create player configs with custom player at random position, dumb players elsewhere
+         player-configs (->> (range 65 (+ num-players 65))
+                            (map char)
+                            (map str)
+                            (map-indexed (fn [idx player-id]
+                                          (hash-map :id player-id
+                                                   :function (if (= idx custom-player-position)
+                                                              custom-player-fn
+                                                              dumb-player/decide))))
+                            vec)
+         _              (js/console.log "run-custom-game: Initializing game state...")
+         ;; Initialize game state
+         initial-state  (init-game-state-with-custom-players player-configs)
+         ;; Track which player is the custom player
+         custom-player-id (:id (nth (:players initial-state) custom-player-position))
+         _              (js/console.log "Custom player ID:" custom-player-id)
+         ;; Add custom player ID to game state for tracking
+         initial-state-with-custom (assoc initial-state :custom-player-id custom-player-id)
+         _              (js/console.log "run-custom-game: Running game to completion...")
+         ;; Run the game to completion
+         final-state    (run-game-from-state initial-state-with-custom safety-threshold)]
+     (js/console.log "run-custom-game: Game complete!")
+     final-state)))

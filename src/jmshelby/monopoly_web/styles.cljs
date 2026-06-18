@@ -91,6 +91,14 @@
     {:background-color "#ff3333"
      :border-color     "#ff3333"}]]
 
+  [:.btn-info
+   {:background-color "#0099cc"
+    :border-color     "#0099cc"
+    :color            "#ffffff"}
+   [:&:hover
+    {:background-color "#00ccff"
+     :border-color     "#00ccff"}]]
+
   [:input :select
    {:background-color "transparent"
     :border "1px solid #666666"
@@ -116,7 +124,62 @@
 
   [:.highlight
    {:color "#ffff66"
-    :background-color "transparent"}])
+    :background-color "transparent"}]
+
+  ;; Player Lab Styles
+  [:.player-lab-container
+   {:display "flex"
+    :height "100vh"}]
+
+  [:.player-lab-left-panel
+   {:width "50%"
+    :border-right "1px solid #333340"
+    :display "flex"
+    :flex-direction "column"}]
+
+  [:.player-lab-header
+   {:padding "1em"
+    :border-bottom "1px solid #333340"
+    :background-color "#0f0f23"}
+   [:h3
+    {:margin "0 0 1em 0"}]]
+
+  [:.player-lab-buttons
+   {:display "flex"
+    :gap "1em"}]
+
+  [:.player-lab-editor-area
+   {:flex "1"
+    :padding "1em"}
+   [:h4
+    {:margin-bottom "0.5em"}]]
+
+  ;; CodeMirror 6 container styling (oneDark theme handles most styling)
+  [:.cm-editor
+   {:height "800px !important"
+    :font-family "\"Courier New\", \"Monaco\", \"Consolas\", monospace !important"
+    :font-size "14px !important"
+    :border "1px solid #333340 !important"}]
+
+  [:.cm-focused
+   {:outline "none !important"
+    :border-color "#009900 !important"
+    :box-shadow "0 0 3px #009900 !important"}]
+
+  [:.player-lab-right-panel
+   {:width "50%"
+    :padding "2em"
+    :background-color "#0f0f23"}]
+
+  [:.player-lab-placeholder
+   {:border "2px dashed #333340"
+    :padding "2em"
+    :text-align "center"
+    :margin-top "2em"
+    :color "#666666"
+    :background-color "#10101a"}
+   [:p
+    {:margin "0.5em 0"}]])
 
 (defclass level1
   []
