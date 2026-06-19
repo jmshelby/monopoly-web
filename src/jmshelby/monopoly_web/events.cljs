@@ -183,50 +183,45 @@
       :monopoly/simulation {:num-games num-games
                             :num-players player-count
                             :started-event ::bulk-sim-started
-                            :completion-event ::bulk-sim-game-finished}})))
+                            :completion-event ::bulk-sim-games-finished}})))
 
 (re-frame/reg-event-fx
  ::stop-bulk-simulation
  (fn [{:keys [db]} _]
    {:db (assoc-in db [:bulk-simulation :running?] false)
-    :monopoly/simulation-stop (get-in db [:bulk-simulation :output-chan])}))
+    :monopoly/simulation-stop (get-in db [:bulk-simulation :workers])}))
 
 (re-frame/reg-event-db
  ::bulk-sim-started
- (fn [db [_ output-ch]]
-   (assoc-in db [:bulk-simulation :output-chan] output-ch)))
+ (fn [db [_ workers]]
+   (assoc-in db [:bulk-simulation :workers] workers)))
 
-;; When bulk monopoly simulation is running, this gets fired every time
-;; a new game is complete and ready to update the analysis screen
+;; When bulk monopoly simulation is running, this gets fired every time a
+;; worker delivers a batch of finished games, ready to update the analysis
+;; screen. Workers push results autonomously, so there is no continuation
+;; effect to request the next game.
 (re-frame/reg-event-fx
- ::bulk-sim-game-finished
- (fn [{:keys [db]} [_ game]]
-   (println "registering new game results in db...")
+ ::bulk-sim-games-finished
+ (fn [{:keys [db]} [_ games]]
    (let [start-time (get-in db [:bulk-simulation :start-time])
          duration-ms (time/elapsed-ms start-time
                                       (time/now))
-         output-ch (get-in db [:bulk-simulation :output-chan])
          total-games (get-in db [:bulk-simulation :total-games])
          prev-results (get-in db [:bulk-simulation :results])
-         new-results (conj prev-results game)
+         new-results (into prev-results games)
          new-stats (core-sim/calculate-statistics new-results
                                                   (count new-results)
                                                   duration-ms)
-         more-games? (not= total-games (count new-results))]
+         more-games? (< (count new-results) total-games)]
 
-     (merge
-      {:db (-> db
-              ;; Recalc new bulk stats with this additional game
-               (assoc-in [:bulk-simulation :stats] new-stats)
-              ;; Keep that game's results
-               (assoc-in [:bulk-simulation :results] new-results)
-              ;; Update progress counter
-               (assoc-in [:bulk-simulation :progress] (count new-results))
-               (assoc-in [:bulk-simulation :running?] more-games?))}
-      ;; If there are more games needed, we need to invoke an fx for that
-      (when more-games?
-        {:monopoly/simulation-continue {:output-ch output-ch
-                                        :completion-event ::bulk-sim-game-finished}})))))
+     {:db (-> db
+             ;; Recalc bulk stats with this batch of games
+              (assoc-in [:bulk-simulation :stats] new-stats)
+             ;; Keep these games' results
+              (assoc-in [:bulk-simulation :results] new-results)
+             ;; Update progress counter
+              (assoc-in [:bulk-simulation :progress] (count new-results))
+              (assoc-in [:bulk-simulation :running?] more-games?))})))
 
 
 (re-frame/reg-event-db
