@@ -14,7 +14,13 @@
    :output-dir "resources/public/js/compiled"
    :asset-path "/js/compiled"
    :modules
-   {:app {:init-fn jmshelby.monopoly-web.core/init}}
+   {:shared {:entries []}
+    :app    {:init-fn    jmshelby.monopoly-web.core/init
+             :depends-on #{:shared}}
+    :worker-simulations
+    {:init-fn    jmshelby.monopoly-web.worker.simulations/init
+     :depends-on #{:shared}
+     :web-worker true}}
    :compiler-options
    {:warnings {:redef false}}
    :devtools
