@@ -2,6 +2,7 @@
   (:require
    [reagent.dom :as rdom]
    [re-frame.core :as re-frame]
+   [cljs.reader :as reader]
    [clojure.core.async :as async]
    [jmshelby.monopoly-web.events :as events]
    [jmshelby.monopoly-web.routes :as routes]
@@ -21,41 +22,59 @@
     (rdom/unmount-component-at-node root-el)
     (rdom/render [views/simple-main-panel] root-el)))
 
-(defn- wait-for-next-game
-  [chan completion-event]
-  (async/go
-    (when-let [game (async/<! chan)]
-      (println "new game ready, dispatching ...")
-      (re-frame/dispatch [completion-event game])
-      (println "new game ready, dispatching ...continuing"))))
+;; Bulk simulation runs each game in a Web Worker so CPU-bound games execute
+;; in parallel across cores instead of one-at-a-time on the main JS thread.
+(def ^:const WORKER-SCRIPT "/js/compiled/worker-simulations.js")
+
+(defn- worker-count
+  "Number of workers to spawn: one per core, minus one to keep the main thread
+  responsive. Never more than the number of games, never less than one."
+  [num-games]
+  (let [cores (or (.-hardwareConcurrency js/navigator) 4)]
+    (max 1 (min num-games (dec cores)))))
+
+(defn- split-games
+  "Split `num-games` into `n` chunk sizes, spreading the remainder over the
+  first few chunks. Returns a seq of positive chunk sizes."
+  [num-games n]
+  (let [base  (quot num-games n)
+        extra (rem num-games n)]
+    (->> (range n)
+         (map #(+ base (if (< % extra) 1 0)))
+         (remove zero?))))
 
 ;; An event to start a bulk simulation of monopoly games
 (re-frame/reg-fx
  :monopoly/simulation
  (fn [{:keys [num-games num-players safety-threshold started-event completion-event]}]
-   (let [num-players (or num-players 4)
+   (let [num-players      (or num-players 4)
          safety-threshold (or safety-threshold 1000)
-         output-ch (core-sim/run-simulation num-games
-                                            num-players
-                                            safety-threshold)]
-     ;; Dispatch to save the channel
+         chunks           (split-games num-games (worker-count num-games))
+         workers
+         (mapv
+          (fn [chunk]
+            (let [w (js/Worker. WORKER-SCRIPT)]
+              ;; Each worker streams back batches of finished game analyses
+              (set! (.-onmessage w)
+                    (fn [e]
+                      (let [msg (reader/read-string (.-data e))]
+                        (when (= :results (:type msg))
+                          (re-frame/dispatch [completion-event (:results msg)])))))
+              (.postMessage w (pr-str {:games            chunk
+                                       :num-players      num-players
+                                       :safety-threshold safety-threshold}))
+              w))
+          chunks)]
+     ;; Hand the workers back so they can be terminated on stop
      (when started-event
-       (re-frame/dispatch [started-event output-ch]))
-     ;; Prime the compute cycle with the first game
-     (wait-for-next-game output-ch completion-event))))
-
-(re-frame/reg-fx
- :monopoly/simulation-continue
- (fn [{:keys [output-ch completion-event]}]
-   ;; Just another take and dispatch when ready
-   (wait-for-next-game output-ch completion-event)))
+       (re-frame/dispatch [started-event workers])))))
 
 (re-frame/reg-fx
  :monopoly/simulation-stop
- (fn [output-ch]
-   ;; Close the channel, and games can't continue
-   (println "closed channel!")
-   (async/close! output-ch)))
+ (fn [workers]
+   ;; Terminate all workers so in-flight games stop producing results
+   (doseq [w workers]
+     (.terminate w))))
 
 ;; Custom player simulation effect
 (re-frame/reg-fx
