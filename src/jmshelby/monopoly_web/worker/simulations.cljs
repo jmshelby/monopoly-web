@@ -21,6 +21,31 @@
   dominating once games stream back in parallel."
   25)
 
+(def ^:const SAMPLE-CAP
+  "Per-game cap on the raw auction-transaction vectors that analyze-game-outcome
+  attaches. These vectors are only ever used to render a handful of sample rows
+  (calculate-statistics takes 5 games x 10 txns), but for long games they can be
+  large. Serializing thousands of them across the worker boundary is what spikes
+  main-thread memory, so we keep only a few entries per game here. Every numeric
+  statistic is derived from separate scalar count fields and is unaffected."
+  5)
+
+(def ^:private sample-keys
+  "Display-only, unbounded fields on each analysis to trim before serializing."
+  [:auction-initiated-transactions
+   :auction-completed-transactions
+   :auction-passed-transactions
+   :property-declined-auctions
+   :bankruptcy-auctions])
+
+(defn- slim
+  "Cap the display-only transaction vectors so message payloads (and retained
+  results) stay small. Leaves all scalar/count fields untouched."
+  [analysis]
+  (reduce (fn [a k] (update a k #(into [] (take SAMPLE-CAP) %)))
+          analysis
+          sample-keys))
+
 (defn- post! [msg]
   (.postMessage js/self (pr-str msg)))
 
@@ -34,7 +59,8 @@
                    (vreset! buf [])))]
     (dotimes [_ games]
       (let [analysis (-> (mono-core/rand-game-end-state num-players safety-threshold)
-                         (mono-sim/analyze-game-outcome))]
+                         (mono-sim/analyze-game-outcome)
+                         (slim))]
         (vswap! buf conj analysis)
         (when (>= (count @buf) BATCH)
           (flush!))))
